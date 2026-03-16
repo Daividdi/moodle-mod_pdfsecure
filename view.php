@@ -60,7 +60,7 @@ if ($file) {
 
     <div style="position: relative; width: 100%; height: 800px; border: 1px solid #ccc; margin-top: 20px; overflow: hidden; user-select: none;">
         
-        <iframe id="pdf-iframe" src="<?php echo $viewerurl; ?>#toolbar=0" width="100%" height="100%" allowfullscreen webkitallowfullscreen style="border:none; position: absolute; z-index: 1;" onload="secureIframe()"></iframe>
+        <iframe id="pdf-iframe" src="<?php echo $viewerurl; ?>#toolbar=0" width="100%" height="100%" style="border:none; position: absolute; z-index: 1;" onload="secureIframe()"></iframe>
         
         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; opacity: 0.5; overflow: hidden;">
             <?php
@@ -73,7 +73,7 @@ if ($file) {
     </div>
 
     <script>
-    // 2. ESCUDO GLOBAL DO MOODLE (Bloqueia atalhos e botão direito)
+    // 2. ESCUDO GLOBAL DO MOODLE
     document.addEventListener('contextmenu', function(event) {
         event.preventDefault();
     });
@@ -84,11 +84,10 @@ if ($file) {
         }
     });
 
-    // 3. CORTINA DE FUMAÇA INTELIGENTE (Anti-Snipping Tool)
+    // 3. CORTINA DE FUMAÇA INTELIGENTE
     var iframeElement = document.getElementById('pdf-iframe');
 
     window.addEventListener('blur', function() {
-        // CORREÇÃO: Se o aluno apenas clicou dentro do PDF, ignora o bloqueio
         if (document.activeElement === iframeElement) {
             return;
         }
@@ -111,14 +110,16 @@ if ($file) {
                 if (innerDoc) {
                     var style = innerDoc.createElement('style');
                     style.innerHTML = `
-                        #print, #download, #secondaryPrint, #secondaryDownload, #openFile, #secondaryOpenFile, .print, .download { display: none !important; }
+                        /* CORREÇÃO 2: Destruição dos botões de Tela Cheia (#presentationMode, #secondaryPresentationMode) */
+                        #print, #download, #secondaryPrint, #secondaryDownload, #openFile, #secondaryOpenFile, .print, .download, #presentationMode, #secondaryPresentationMode, .presentationMode { display: none !important; }
                         body, .textLayer { user-select: none !important; -webkit-user-select: none !important; cursor: default !important; }
                         @media print { body { display: none !important; } }
                     `;
                     innerDoc.head.appendChild(style);
 
                     innerDoc.addEventListener('keydown', function(e) {
-                        if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'P' || e.key === 'S')) {
+                        // CORREÇÃO 3: Bloqueio adicional da tecla F11
+                        if (e.key === 'F11' || (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'P' || e.key === 'S'))) {
                             e.preventDefault();
                         }
                     });
@@ -127,7 +128,6 @@ if ($file) {
                         event.preventDefault();
                     });
 
-                    // NOVA REGRA: Escudo de tela em branco caso ele perca o foco enquanto clica dentro do PDF
                     innerWindow.addEventListener('blur', function() {
                         iframe.style.opacity = '0';
                     });
