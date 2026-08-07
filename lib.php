@@ -47,16 +47,44 @@ function pdfsecure_delete_instance($id) {
 
 function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options=array()) {
     global $USER;
+
     if ($context->contextlevel != CONTEXT_MODULE) {
         return false;
     }
+
+    // The uploaded original is NEVER served. Only the per-user stamped derivative
+    // leaves this plugin.
+    //
+    // This single check is what makes the watermark meaningful. Previously this
+    // function served the 'content' area directly, so the raw unstamped PDF stayed
+    // addressable by anyone who read the page source - every front-end control in
+    // view.php was decoration on top of an open door.
+    if ($filearea !== \mod_pdfsecure\local\watermarker::AREA) {
+        return false;
+    }
+
     require_login($course, false, $cm);
-    $itemid = array_shift($args);
+    require_capability('mod/pdfsecure:view', $context);
+
+    $itemid = (int)array_shift($args);
     $filename = array_shift($args);
+
+    // itemid IS the user id. Without this, any enrolled user could fetch the copy
+    // stamped with somebody else's name simply by editing the number in the URL -
+    // which would let a leaker frame a colleague.
+    if ($itemid !== (int)$USER->id) {
+        return false;
+    }
+
     $fs = get_file_storage();
     $file = $fs->get_file($context->id, 'mod_pdfsecure', $filearea, $itemid, '/', $filename);
     if (!$file) {
         return false;
     }
-    send_stored_file($file, 0, 0, $forcedownload, $options);
+
+    // Lifetime 0 and private cacheability: the response body differs per user, so it
+    // must never be held in a shared cache. forcedownload is pinned to false so
+    // appending ?forcedownload=1 cannot turn the view into an attachment.
+    $options['cacheability'] = 'private';
+    send_stored_file($file, 0, 0, false, $options);
 }

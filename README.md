@@ -1,50 +1,130 @@
-# Moodle PDF Secure Viewer (mod_pdfsecure)
+# PDF Secure (mod_pdfsecure)
 
-![Moodle Version](https://img.shields.io/badge/Moodle-3.9+-orange.svg)
+A Moodle activity module that serves course PDFs with a **per-user watermark burned
+into the file**, and never serves the unwatermarked original.
+
+![Moodle](https://img.shields.io/badge/Moodle-4.5%20%E2%80%93%205.2-orange.svg)
 ![License](https://img.shields.io/badge/License-GPLv3-blue.svg)
 
 **Author:** Daividdi
 
 ---
 
-## 🇺🇸 English Description
+## What this does, and what it does not
 
-**PDF Secure Viewer** is a custom Moodle Activity Module designed to display PDF files with an aggressive layer of Digital Rights Management (DRM) directly in the browser, without requiring third-party APIs or external software.
+Read this part before deciding whether the plugin is right for you.
 
-Built on top of Mozilla's PDF.js, this plugin ensures that your educational materials are heavily protected against unauthorized distribution and data leaks.
+A document a browser can display is a document the reader can copy. There is no
+configuration, no plugin and no commercial DRM that changes this — a screenshot, a
+screen recording or a phone camera defeats all of them. Anything claiming otherwise
+is selling reassurance, not protection.
 
-### 🛡️ Key Security Features:
-* **Psychological DRM (Dynamic Watermark):** Automatically stamps the logged-in user's full name, current date, and time repeatedly across the document. Identifies the source of any physical photo taken from the screen.
-* **Anti-Download & Anti-Print:** Natively destroys the download and print buttons from the PDF.js interface.
-* **Global Print Blackout:** Uses strict CSS `@media print` rules to render a blank page if the user attempts to force browser printing (Ctrl+P).
-* **Smart Anti-Snipping Tool (Focus-Loss Blur):** The document instantly disappears (opacity: 0) if the browser window loses focus (e.g., when the user tries to open the Windows Snipping Tool or switches to another application).
-* **Keyboard & Mouse Shield:** Disables right-click (context menu), text selection, and shortcut keys (Ctrl+P, Ctrl+S) globally on the viewing page.
-* **Fullscreen & Presentation Mode Block:** Disables PDF.js presentation mode and blocks the F11 key to prevent users from expanding the PDF and bypassing the watermark layer.
+So this module does not try to prevent copying. It makes copies **attributable**:
 
-### ⚙️ Installation
-1. Clone or download this repository.
-2. Extract the folder and rename it to `pdfsecure`.
-3. Place the `pdfsecure` folder into your Moodle's `/mod/` directory (`yourmoodle/mod/pdfsecure`).
-4. Log in to your Moodle site as an admin and proceed with the standard plugin upgrade process.
+**It does:**
+
+- Stamp every page with the name, email, user id, activity id and access time of
+  the account that opened it — written into the PDF's page content, not overlaid by
+  the browser, so it survives download, re-upload and forwarding.
+- Repeat the same identity in the PDF metadata (`Author`, `Subject`), so a leaked
+  file can be traced by tooling without reading a single page.
+- Refuse to serve the original upload. The raw file is never reachable over HTTP,
+  by any URL, for any user.
+- Bind each generated copy to one account. Editing the user id in the URL returns
+  404, so nobody can fetch a colleague's stamped copy and frame them with it.
+- Fail closed. If a PDF cannot be stamped, the reader gets an error — never the
+  unstamped original.
+
+**It does not:**
+
+- Prevent screenshots, screen recordings or photographs of the screen.
+- Prevent a determined user from saving what the viewer renders.
+- Protect the file once it has legitimately left your site by another route — for
+  example a course backup. If your teachers can download `.mbz` archives, they can
+  extract every original PDF, and no viewer-side control changes that. Restrict
+  `moodle/backup:downloadfile` if that matters to you.
+
+The honest summary: **it will not stop a leak, it will tell you whose account it
+came from.** In practice that is the control that changes behaviour.
 
 ---
 
-## 🇧🇷 Descrição em Português
+## How it works
 
-**PDF Secure Viewer** é um Módulo de Atividade customizado para o Moodle, desenvolvido para exibir arquivos PDF com uma camada agressiva de Gestão de Direitos Digitais (DRM) diretamente no navegador, sem a necessidade de APIs de terceiros ou softwares externos.
+1. A teacher uploads a PDF to the activity as usual. The original is stored
+   untouched and is never served.
+2. On a user's **first view**, the plugin renders a personalised copy with
+   [FPDI](https://www.setasign.com/products/fpdi/about/) — a tiled diagonal mark
+   plus a legible footer stamp — and caches it.
+3. Later views serve the cached copy. It regenerates automatically when the source
+   file changes, or when the watermark settings change.
+4. The document is displayed in a bundled [PDF.js](https://mozilla.github.io/pdf.js/)
+   viewer with its download and print controls removed.
 
-Construído sobre o PDF.js da Mozilla, este plugin garante que seus materiais educacionais sejam fortemente protegidos contra distribuição não autorizada e vazamento de dados (Data Leaks).
+The viewer-side controls are a speed bump for the casual user, nothing more. The
+watermark is the part that actually holds.
 
-### 🛡️ Principais Funcionalidades de Segurança:
-* **DRM Psicológico (Marca D'água Dinâmica):** Estampa automaticamente o nome completo do usuário logado, data e hora atuais repetidamente sobre o documento. Identifica a origem de qualquer foto física tirada da tela.
-* **Anti-Download e Anti-Impressão:** Destrói nativamente os botões de baixar e imprimir da interface do PDF.js.
-* **Apagão Global de Impressão:** Utiliza regras rígidas de CSS `@media print` para renderizar uma página em branco caso o usuário tente forçar a impressão pelo navegador (Ctrl+P).
-* **Anti-Captura Inteligente (Blur por Perda de Foco):** O documento desaparece instantaneamente (opacidade: 0) se a janela do navegador perder o foco (ex: quando o aluno tenta abrir a Ferramenta de Captura do Windows ou muda de aplicativo).
-* **Escudo de Teclado e Mouse:** Desabilita o clique com o botão direito (menu de contexto), a seleção de texto e as teclas de atalho (Ctrl+P, Ctrl+S) globalmente na página de visualização.
-* **Bloqueio de Tela Cheia e Modo Apresentação:** Desativa o modo de apresentação do PDF.js e bloqueia a tecla F11 para impedir que os usuários expandam o PDF e contornem a camada da marca d'água.
+### Caching
 
-### ⚙️ Instalação
-1. Clone ou baixe este repositório.
-2. Extraia a pasta e renomeie-a para `pdfsecure`.
-3. Coloque a pasta `pdfsecure` dentro do diretório `/mod/` do seu Moodle (`seumoodle/mod/pdfsecure`).
-4. Faça login no Moodle como administrador e prossiga com o processo padrão de atualização de plugins.
+Generated copies live in the `watermarked` file area, keyed by
+`v<RENDER_VERSION>-<settings hash>-<source contenthash>`. All three parts matter:
+the content hash invalidates when the file is replaced, the render version when the
+code changes, and the settings hash when an administrator retunes the appearance —
+without that last one, changing the tone in the UI would silently do nothing for
+anyone who already had a cached copy.
+
+---
+
+## Requirements
+
+- Moodle 4.5 or later (tested on 4.5 and 5.2, including the 5.x split webroot)
+- PHP 8.1+ with `iconv` supporting `//TRANSLIT`
+
+FPDI and FPDF are bundled in `vendor/` — no Composer step is needed on the server.
+
+**Known limitation of the PDF engine:** FPDI cannot read encrypted PDFs, and
+importing drops annotations, links, bookmarks and form fields. For reading material
+this is usually fine; if your PDFs are interactive forms, test before rolling out.
+
+---
+
+## Installation
+
+```bash
+cd /path/to/moodle/mod          # Moodle 5.x: /path/to/moodle/public/mod
+git clone https://github.com/Daividdi/moodle-mod_pdfsecure.git pdfsecure
+php admin/cli/upgrade.php --non-interactive
+```
+
+The directory **must** be named `pdfsecure`.
+
+## Settings
+
+*Site administration → Plugins → Activity modules → PDF Secure*
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Watermark tone | Light | Darker survives a low-quality photo better; lighter reads through more comfortably |
+| Watermark text size | 11 pt | Larger is more legible in a photo of the screen, and covers more of the page |
+| Include date in the diagonal watermark | On | The footer stamp always carries the date regardless |
+| Show footer stamp | On | The legible line meant to be read by eye when tracing a leak |
+
+Changing any of these regenerates every cached copy on next access.
+
+---
+
+## Privacy
+
+The plugin writes the viewer's name, email and user id into the documents it
+generates, and stores those documents in the Moodle file API. Deployments subject to
+GDPR or similar should say so in their privacy policy: this is personal data being
+embedded in a file that may leave the platform — which is, after all, the point.
+
+---
+
+## Licence
+
+GPL v3 or later, matching Moodle.
+
+Bundled third-party components keep their own licences: PDF.js (Apache 2.0),
+FPDF and FPDI (see `vendor/setasign/`).

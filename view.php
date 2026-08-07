@@ -39,14 +39,26 @@ foreach ($files as $f) {
 }
 
 if ($file) {
-    $fileurl = moodle_url::make_pluginfile_url($context->id, 'mod_pdfsecure', 'content', 0, '/', $file->get_filename());
+    // Stamp on first view, then serve only the stamped copy. Failure is fatal on
+    // purpose: falling back to the original "just this once" is exactly how the
+    // unstamped file escapes, and FPDI legitimately refuses some sources
+    // (encrypted PDFs above all).
+    try {
+        $served = \mod_pdfsecure\local\watermarker::get_for_user($file, $USER, $cm->id);
+    } catch (\Throwable $e) {
+        debugging('pdfsecure: watermarking failed for file ' . $file->get_id()
+            . ': ' . $e->getMessage(), DEBUG_DEVELOPER);
+        echo $OUTPUT->notification(get_string('cannotstamp', 'mod_pdfsecure'), 'notifyproblem');
+        echo $OUTPUT->footer();
+        die;
+    }
+
+    $fileurl = moodle_url::make_pluginfile_url($context->id, 'mod_pdfsecure',
+        \mod_pdfsecure\local\watermarker::AREA, $USER->id, '/', $served->get_filename());
     $viewerpath = $CFG->wwwroot . '/mod/pdfsecure/pdfjs-drm/web/viewer.html';
     
     // Forçando o idioma para Inglês
     $viewerurl = $viewerpath . '?file=' . urlencode($fileurl->out(false)) . '&locale=en-US';
-
-    global $USER;
-    $watermark_text = fullname($USER) . ' - ' . userdate(time(), '%Y-%m-%d %H:%M');
 
     ?>
     <style>
@@ -62,13 +74,14 @@ if ($file) {
         
         <iframe id="pdf-iframe" src="<?php echo $viewerurl; ?>#toolbar=0" width="100%" height="100%" style="border:none; position: absolute; z-index: 1;" onload="secureIframe()"></iframe>
         
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; opacity: 0.5; overflow: hidden;">
-            <?php
-            for ($i = 0; $i < 40; $i++) {
-                echo '<div style="transform: rotate(-30deg); font-size: 24px; color: rgba(150, 150, 150, 0.6); font-weight: bold; padding: 50px; white-space: nowrap; text-shadow: 1px 1px 2px rgba(255,255,255,0.7);">'.s($watermark_text).'</div>';
-            }
-            ?>
-        </div>
+        <?php
+        // O overlay CSS de marca d'agua foi REMOVIDO em 2026-08-07.
+        //
+        // A marca agora e queimada nos bytes do PDF (mod_pdfsecure\local\watermarker),
+        // entao o overlay so duplicava a marca na tela: o usuario via duas, e o que
+        // ele via nao era o que estava no arquivo. Pior, ele dava a impressao de ser
+        // a protecao, quando sumia com um clique no DevTools.
+        ?>
 
     </div>
 
