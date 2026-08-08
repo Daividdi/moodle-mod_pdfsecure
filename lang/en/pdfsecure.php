@@ -36,3 +36,5 @@ $string['settingretention_desc'] = 'One copy is stored per user per document, so
 $string['retentionnever'] = 'Keep forever (no pruning)';
 $string['retentiondays'] = '{$a} days';
 
+// Global Search.
+$string['search:activity'] = 'PDF Secure - activity and document text';
