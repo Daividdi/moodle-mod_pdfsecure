@@ -59,6 +59,20 @@ if ($ADMIN->fulltree) {
         1
     ));
 
+    $settings->add(new admin_setting_configselect(
+        'mod_pdfsecure/retentiondays',
+        get_string('settingretention', 'mod_pdfsecure'),
+        get_string('settingretention_desc', 'mod_pdfsecure'),
+        30,
+        [
+            0   => get_string('retentionnever', 'mod_pdfsecure'),
+            7   => get_string('retentiondays', 'mod_pdfsecure', 7),
+            30  => get_string('retentiondays', 'mod_pdfsecure', 30),
+            90  => get_string('retentiondays', 'mod_pdfsecure', 90),
+            365 => get_string('retentiondays', 'mod_pdfsecure', 365),
+        ]
+    ));
+
     $settings->add(new admin_setting_configcheckbox(
         'mod_pdfsecure/showfooter',
         get_string('settingshowfooter', 'mod_pdfsecure'),

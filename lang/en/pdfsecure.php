@@ -28,3 +28,11 @@ $string['settingincludedate'] = 'Include date in the diagonal watermark';
 $string['settingincludedate_desc'] = 'Adds the date and time of access next to the name and email. The footer stamp always carries the date regardless of this setting.';
 $string['settingshowfooter'] = 'Show footer stamp';
 $string['settingshowfooter_desc'] = 'A small legible line at the bottom of every page with the full identity, user id, activity id and timestamp, on a white band so it stays readable over dark page designs. This is the stamp meant to be read by eye when tracing a leak.';
+
+// Retention of generated copies.
+$string['taskprune'] = 'Remove old watermarked copies';
+$string['settingretention'] = 'Keep watermarked copies for';
+$string['settingretention_desc'] = 'One copy is stored per user per document, so this file area grows with users x documents x time and has no natural ceiling. Old copies are deleted nightly and regenerate transparently on the next view, which costs hundredths of a second - so a short retention is close to free. Choose "Keep forever" only if disk space is not a concern.';
+$string['retentionnever'] = 'Keep forever (no pruning)';
+$string['retentiondays'] = '{$a} days';
+

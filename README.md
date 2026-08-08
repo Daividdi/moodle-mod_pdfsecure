@@ -108,8 +108,22 @@ The directory **must** be named `pdfsecure`.
 | Watermark text size | 11 pt | Larger is more legible in a photo of the screen, and covers more of the page |
 | Include date in the diagonal watermark | On | The footer stamp always carries the date regardless |
 | Show footer stamp | On | The legible line meant to be read by eye when tracing a leak |
+| Keep watermarked copies for | 30 days | See below |
 
-Changing any of these regenerates every cached copy on next access.
+Changing any of the appearance settings regenerates every cached copy on next access.
+
+### Retention
+
+One copy is stored **per user, per document**, so this file area grows with
+users x documents x time and has no natural ceiling. A few hundred learners and a
+few dozen handbooks reach tens of gigabytes, and a full disk takes the whole site
+down, not just this plugin.
+
+A nightly task deletes copies older than the retention window. They regenerate
+transparently on the next view at a cost of hundredths of a second, so a short
+retention is close to free — pruning a copy that is still in use is cheaper than
+the bookkeeping needed to avoid it. Set it to *Keep forever* only if disk space is
+genuinely not a concern.
 
 ---
 
