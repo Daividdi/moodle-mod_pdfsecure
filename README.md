@@ -45,7 +45,13 @@ So this module does not try to prevent copying. It makes copies **attributable**
   `moodle/backup:downloadfile` if that matters to you.
 
 The honest summary: **it will not stop a leak, it will tell you whose account it
-came from.** In practice that is the control that changes behaviour.
+came from, and when they read it.** In practice that is the control that changes
+behaviour.
+
+Note the asymmetry with video: a stamped PDF carries its mark *inside the file*, so a
+copy that is downloaded and passed on is still traceable. An on-screen overlay — the
+usual approach for video — only survives a screen recording, not a downloaded file.
+This module is the stronger of the two because the mark is in the bytes.
 
 ---
 
@@ -53,25 +59,36 @@ came from.** In practice that is the control that changes behaviour.
 
 1. A teacher uploads a PDF to the activity as usual. The original is stored
    untouched and is never served.
-2. On a user's **first view**, the plugin renders a personalised copy with
+2. **On every view**, the plugin renders a personalised copy with
    [FPDI](https://www.setasign.com/products/fpdi/about/) — a tiled diagonal mark
-   plus a legible footer stamp — and caches it.
-3. Later views serve the cached copy. It regenerates automatically when the source
-   file changes, or when the watermark settings change.
-4. The document is displayed in a bundled [PDF.js](https://mozilla.github.io/pdf.js/)
+   plus a legible footer stamp — and streams it. Nothing is stored.
+3. The document is displayed in a bundled [PDF.js](https://mozilla.github.io/pdf.js/)
    viewer with its download and print controls removed.
 
 The viewer-side controls are a speed bump for the casual user, nothing more. The
 watermark is the part that actually holds.
 
-### Caching
+### Why nothing is cached
 
-Generated copies live in the `watermarked` file area, keyed by
-`v<RENDER_VERSION>-<settings hash>-<source contenthash>`. All three parts matter:
-the content hash invalidates when the file is replaced, the render version when the
-code changes, and the settings hash when an administrator retunes the appearance —
-without that last one, changing the tone in the UI would silently do nothing for
-anyone who already had a cached copy.
+An earlier version stored one stamped copy per user and reused it. That froze the
+timestamp at the moment of that user's **first** view: someone opening a document in
+November carried a stamp from the day in August they first looked at it. For a mark
+whose job is tracing a leak, a stale time is worse than none — it points at the wrong
+moment with the same confidence as the right one.
+
+Rendering per view costs about 0.02 s and 8 MB for typical course documents. That is
+cheaper than the storage it replaces, which grew with users x documents x time and
+had no ceiling — on one live site it projected to roughly 14 GB.
+
+**`Accept-Ranges: none` is load-bearing.** FPDI output is not byte-identical between
+runs, so a browser fetching byte ranges would stitch fragments of separately
+generated files into one corrupt PDF. PDF.js ships with `disableRange = false` and
+would do exactly that, so the header is what makes per-view rendering safe. Do not
+remove it.
+
+The reader's identity comes from the **session**, not from the URL. There is nothing
+in the address that selects whose name is burned in, so nothing to tamper with in
+order to obtain a copy stamped with a colleague's name.
 
 ---
 
@@ -108,22 +125,7 @@ The directory **must** be named `pdfsecure`.
 | Watermark text size | 11 pt | Larger is more legible in a photo of the screen, and covers more of the page |
 | Include date in the diagonal watermark | On | The footer stamp always carries the date regardless |
 | Show footer stamp | On | The legible line meant to be read by eye when tracing a leak |
-| Keep watermarked copies for | 30 days | See below |
-
-Changing any of the appearance settings regenerates every cached copy on next access.
-
-### Retention
-
-One copy is stored **per user, per document**, so this file area grows with
-users x documents x time and has no natural ceiling. A few hundred learners and a
-few dozen handbooks reach tens of gigabytes, and a full disk takes the whole site
-down, not just this plugin.
-
-A nightly task deletes copies older than the retention window. They regenerate
-transparently on the next view at a cost of hundredths of a second, so a short
-retention is close to free — pruning a copy that is still in use is cheaper than
-the bookkeeping needed to avoid it. Set it to *Keep forever* only if disk space is
-genuinely not a concern.
+| Largest document to stamp | 40 MB | A document is held in memory while stamped, and that happens on every view. Larger files are refused rather than allowed to exhaust the PHP memory limit on each read. |
 
 ---
 
