@@ -43,18 +43,11 @@ if ($file) {
     // purpose: falling back to the original "just this once" is exactly how the
     // unstamped file escapes, and FPDI legitimately refuses some sources
     // (encrypted PDFs above all).
-    try {
-        $served = \mod_pdfsecure\local\watermarker::get_for_user($file, $USER, $cm->id);
-    } catch (\Throwable $e) {
-        debugging('pdfsecure: watermarking failed for file ' . $file->get_id()
-            . ': ' . $e->getMessage(), DEBUG_DEVELOPER);
-        echo $OUTPUT->notification(get_string('cannotstamp', 'mod_pdfsecure'), 'notifyproblem');
-        echo $OUTPUT->footer();
-        die;
-    }
-
+    // Points at the virtual `stamped` area, which regenerates the document on every
+    // request with the reader's identity and the current time. No itemid is needed:
+    // the stamp comes from the session, so the URL carries nothing worth editing.
     $fileurl = moodle_url::make_pluginfile_url($context->id, 'mod_pdfsecure',
-        \mod_pdfsecure\local\watermarker::AREA, $USER->id, '/', $served->get_filename());
+        'stamped', 0, '/', $file->get_filename());
     $viewerpath = $CFG->wwwroot . '/mod/pdfsecure/pdfjs-drm/web/viewer.html';
     
     // Forçando o idioma para Inglês

@@ -52,39 +52,56 @@ function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
         return false;
     }
 
-    // The uploaded original is NEVER served. Only the per-user stamped derivative
-    // leaves this plugin.
-    //
-    // This single check is what makes the watermark meaningful. Previously this
-    // function served the 'content' area directly, so the raw unstamped PDF stayed
-    // addressable by anyone who read the page source - every front-end control in
-    // view.php was decoration on top of an open door.
-    if ($filearea !== \mod_pdfsecure\local\watermarker::AREA) {
+    // Only the virtual `stamped` area is addressable. The real `content` area, which
+    // holds the untouched upload, has no route out of here at all - not for any user,
+    // not with any URL. Everything served from this plugin passes through the
+    // watermarker below, so there is no branch where the original can escape.
+    if ($filearea !== 'stamped') {
         return false;
     }
 
     require_login($course, false, $cm);
     require_capability('mod/pdfsecure:view', $context);
 
-    $itemid = (int)array_shift($args);
-    $filename = array_shift($args);
-
-    // itemid IS the user id. Without this, any enrolled user could fetch the copy
-    // stamped with somebody else's name simply by editing the number in the URL -
-    // which would let a leaker frame a colleague.
-    if ($itemid !== (int)$USER->id) {
+    // The filename identifies WHICH document; WHO is reading it comes from the
+    // session, never from the URL. There is therefore nothing in the address to
+    // tamper with in order to obtain a copy stamped with somebody else's name.
+    array_shift($args);                 // itemid placeholder, always 0
+    $filename = clean_param(array_pop($args), PARAM_FILE);
+    if ($filename === '') {
         return false;
     }
 
     $fs = get_file_storage();
-    $file = $fs->get_file($context->id, 'mod_pdfsecure', $filearea, $itemid, '/', $filename);
-    if (!$file) {
+    $source = $fs->get_file($context->id, 'mod_pdfsecure', 'content', 0, '/', $filename);
+    if (!$source) {
         return false;
     }
 
-    // Lifetime 0 and private cacheability: the response body differs per user, so it
-    // must never be held in a shared cache. forcedownload is pinned to false so
-    // appending ?forcedownload=1 cannot turn the view into an attachment.
-    $options['cacheability'] = 'private';
-    send_stored_file($file, 0, 0, false, $options);
+    try {
+        $content = \mod_pdfsecure\local\watermarker::render_for($source, $USER, (int)$cm->id);
+    } catch (\Throwable $e) {
+        // Fail closed. Serving the original "just this once" is precisely how an
+        // unstamped copy escapes, and FPDI legitimately refuses some sources.
+        debugging('pdfsecure: stamping failed for file ' . $source->get_id() . ': '
+            . $e->getMessage(), DEBUG_DEVELOPER);
+        send_file_not_found();
+    }
+
+    // Accept-Ranges: none is load-bearing, not tidiness. Each request regenerates the
+    // document, and FPDI output is not byte-identical between runs, so a browser
+    // fetching byte ranges would stitch pieces of different generations into one
+    // corrupt file. Refusing ranges makes the viewer fetch it whole, once.
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: inline; filename="' . rawurlencode($filename) . '"');
+    header('Content-Length: ' . strlen($content));
+    header('Accept-Ranges: none');
+    // Per-user and per-view: it must not be held by a shared cache, and the browser
+    // must not reuse it either, or the timestamp stops reflecting the actual read.
+    header('Cache-Control: private, no-store, no-cache, must-revalidate');
+    header('Pragma: no-cache');
+    header('X-Content-Type-Options: nosniff');
+
+    echo $content;
+    die;
 }

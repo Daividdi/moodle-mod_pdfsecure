@@ -17,19 +17,14 @@
 namespace mod_pdfsecure\task;
 
 /**
- * Deletes watermarked copies that have been sitting around for a while.
+ * Removes the cached stamped copies left behind by earlier versions.
  *
- * One copy is generated per user per document, so the file area grows with
- * users x documents x time and has no natural ceiling. On a site with a few
- * hundred learners and a few dozen handbooks that reaches tens of gigabytes,
- * which is a disk-full outage for the whole platform rather than a problem
- * confined to this plugin.
+ * Up to v1.3.0 one stamped copy was stored per user per document. That cache is gone:
+ * documents are now rendered per request, so nothing accumulates and there is nothing
+ * to retain. What remains is other people's disk still holding the old copies, which
+ * are dead weight and carry frozen timestamps that no longer match anything.
  *
- * Pruning is by age rather than by last access on purpose. Moodle's file API
- * records creation and modification, not reads, so tracking access would mean a
- * database write on every single view. Regenerating a stamped copy costs
- * hundredths of a second, so pruning one that is still in use is cheaper than
- * the bookkeeping needed to avoid it - the reader never notices.
+ * This task exists to clear them and can be removed once every install has run it.
  *
  * @package    mod_pdfsecure
  * @copyright  2026 Aditek / Angel Aligner
@@ -45,24 +40,15 @@ class prune_derivatives extends \core\task\scheduled_task {
     }
 
     /**
-     * Removes derivatives older than the configured retention.
+     * Deletes every file in the legacy `watermarked` area.
      */
     public function execute(): void {
         global $DB;
 
-        $days = (int)get_config('mod_pdfsecure', 'retentiondays');
-        if ($days <= 0) {
-            mtrace('pdfsecure prune: retention disabled, nothing to do');
-            return;
-        }
-
-        $cutoff = time() - ($days * DAYSECS);
         $fs = get_file_storage();
-
         $rs = $DB->get_recordset_select('files',
-            "component = :component AND filearea = :filearea
-             AND filename <> '.' AND timecreated < :cutoff",
-            ['component' => 'mod_pdfsecure', 'filearea' => 'watermarked', 'cutoff' => $cutoff],
+            "component = :component AND filearea = :filearea AND filename <> '.'",
+            ['component' => 'mod_pdfsecure', 'filearea' => 'watermarked'],
             '', 'id');
 
         $count = 0;
@@ -76,7 +62,9 @@ class prune_derivatives extends \core\task\scheduled_task {
         }
         $rs->close();
 
-        mtrace("pdfsecure prune: removed {$count} stamped copy(ies) older than {$days} day(s), "
-            . display_size($bytes) . " reclaimed");
+        if ($count) {
+            mtrace("pdfsecure: removed {$count} legacy cached copy(ies), "
+                . display_size($bytes) . " reclaimed");
+        }
     }
 }

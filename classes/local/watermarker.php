@@ -63,6 +63,33 @@ class watermarker {
     }
 
     /**
+     * Renders a stamped copy for this user, right now, and returns the bytes.
+     *
+     * Nothing is stored. The previous design cached one derivative per user, which
+     * froze the timestamp at the moment of that user's FIRST view: someone opening a
+     * document months later carried a stamp from the day they first looked at it.
+     * For a mark whose job is tracing a leak, a stale time is worse than no time -
+     * it points at the wrong moment with the same confidence as the right one.
+     *
+     * Generation costs ~0.02 s and ~8 MB for the documents on these sites, so paying
+     * it per view is cheaper than the storage, the pruning task and the staleness the
+     * cache brought with it.
+     *
+     * The caller MUST send this with `Accept-Ranges: none`. FPDI output is not
+     * byte-identical between runs, so if the browser were allowed to fetch byte
+     * ranges it would assemble pieces of separately generated files into one
+     * corrupt PDF.
+     *
+     * @param \stored_file $source the original uploaded PDF
+     * @param \stdClass $user the user the copy is being stamped for
+     * @param int $cmid course module id, stamped in so a leak identifies the activity
+     * @return string raw PDF bytes
+     */
+    public static function render_for(\stored_file $source, \stdClass $user, int $cmid): string {
+        return self::render($source, $user, $cmid, self::settings());
+    }
+
+    /**
      * Returns the watermarked derivative for this user, generating it on first access.
      *
      * The cache key carries three things, and each one has to be there: the render
