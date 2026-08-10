@@ -66,8 +66,14 @@ function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
     // The filename identifies WHICH document; WHO is reading it comes from the
     // session, never from the URL. There is therefore nothing in the address to
     // tamper with in order to obtain a copy stamped with somebody else's name.
+    // Guarded rather than assumed: a request for the area root leaves $args empty,
+    // and array_pop() on that returns null, which clean_param() is not required to
+    // survive on PHP 8.
     array_shift($args);                 // itemid placeholder, always 0
-    $filename = clean_param(array_pop($args), PARAM_FILE);
+    if (empty($args)) {
+        return false;
+    }
+    $filename = clean_param((string)array_pop($args), PARAM_FILE);
     if ($filename === '') {
         return false;
     }
@@ -76,6 +82,18 @@ function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
     $source = $fs->get_file($context->id, 'mod_pdfsecure', 'content', 0, '/', $filename);
     if (!$source) {
         return false;
+    }
+
+    // The whole document is held in memory while it is rendered, and now that
+    // happens on every view rather than once. An oversized upload would therefore
+    // exhaust the PHP memory limit on each read instead of failing once, so refuse
+    // it up front and leave a trace explaining why.
+    $maxbytes = (int)(get_config('mod_pdfsecure', 'maxstampbytes') ?: 41943040);
+    if ($source->get_filesize() > $maxbytes) {
+        debugging('pdfsecure: refusing to stamp ' . $source->get_filename() . ' ('
+            . display_size($source->get_filesize()) . ' exceeds the '
+            . display_size($maxbytes) . ' limit)', DEBUG_DEVELOPER);
+        send_file_not_found();
     }
 
     try {
@@ -93,7 +111,12 @@ function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
     // fetching byte ranges would stitch pieces of different generations into one
     // corrupt file. Refusing ranges makes the viewer fetch it whole, once.
     header('Content-Type: application/pdf');
-    header('Content-Disposition: inline; filename="' . rawurlencode($filename) . '"');
+    // RFC 6266: the plain form stays readable for ASCII names, and filename* carries
+    // the real one for anything else. rawurlencode() alone would show the reader a
+    // percent-encoded name in the save dialog.
+    header('Content-Disposition: inline; filename="'
+        . str_replace(['"', "\r", "\n"], '', $filename) . '"; filename*=UTF-8\'\''
+        . rawurlencode($filename));
     header('Content-Length: ' . strlen($content));
     header('Accept-Ranges: none');
     // Per-user and per-view: it must not be held by a shared cache, and the browser

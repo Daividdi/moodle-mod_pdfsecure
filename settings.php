@@ -59,6 +59,18 @@ if ($ADMIN->fulltree) {
         1
     ));
 
+    $settings->add(new admin_setting_configselect(
+        'mod_pdfsecure/maxstampbytes',
+        get_string('settingmaxsize', 'mod_pdfsecure'),
+        get_string('settingmaxsize_desc', 'mod_pdfsecure'),
+        41943040,
+        [
+            10485760  => '10 MB',
+            41943040  => '40 MB',
+            104857600 => '100 MB',
+        ]
+    ));
+
     $settings->add(new admin_setting_configcheckbox(
         'mod_pdfsecure/showfooter',
         get_string('settingshowfooter', 'mod_pdfsecure'),

@@ -34,3 +34,7 @@ $string['taskprune'] = 'Clean up cached copies from older versions';
 
 // Global Search.
 $string['search:activity'] = 'PDF Secure - activity and document text';
+
+$string['settingmaxsize'] = 'Largest document to stamp';
+$string['settingmaxsize_desc'] = 'A document is held in memory while it is stamped, and that happens on every view. Anything larger than this is refused rather than allowed to exhaust the PHP memory limit on each read. Raise it only alongside the PHP memory limit.';
+
