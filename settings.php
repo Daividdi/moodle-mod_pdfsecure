@@ -15,12 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Site-wide watermark appearance.
+ * Whether to stamp at all, and what the stamp looks like.
  *
- * These were hardcoded constants. They are settings because the right balance
- * between "clearly marked" and "still readable" depends on the documents, and
- * nobody should have to edit PHP to retune it. Changing any of them invalidates
- * the cached derivatives automatically - the settings are part of the cache key.
+ * The appearance values were hardcoded constants. They are settings because the
+ * right balance between "clearly marked" and "still readable" depends on the
+ * documents, and nobody should have to edit PHP to retune it.
  *
  * @package    mod_pdfsecure
  * @copyright  2026 Aditek / Angel Aligner
@@ -30,6 +29,27 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
+
+    // Not every site wants the stamp. Where the workstations already apply their own
+    // watermark, ours lands on top of theirs: two overlapping marks, a document that
+    // is measurably harder to read, and no attribution the site did not already have.
+    //
+    // Turning the stamp off changes only the stamp. The original still has no URL of
+    // its own, delivery still runs the login, enrolment and capability checks, the
+    // viewer still hides download and print, and the document text is still indexed
+    // for Global Search. It also removes FPDI from the path, which means documents
+    // FPDI refuses - encrypted ones above all - become readable instead of failing
+    // closed, and links, bookmarks and form fields survive intact.
+    $settings->add(new admin_setting_configselect(
+        'mod_pdfsecure/stampmode',
+        get_string('settingstampmode', 'mod_pdfsecure'),
+        get_string('settingstampmode_desc', 'mod_pdfsecure'),
+        'full',
+        [
+            'full' => get_string('stampmodefull', 'mod_pdfsecure'),
+            'off'  => get_string('stampmodeoff', 'mod_pdfsecure'),
+        ]
+    ));
 
     $settings->add(new admin_setting_configselect(
         'mod_pdfsecure/tone',
@@ -77,4 +97,11 @@ if ($ADMIN->fulltree) {
         get_string('settingshowfooter_desc', 'mod_pdfsecure'),
         1
     ));
+
+    // Every setting above describes the stamp, or the cost of producing one, so all
+    // of them are noise once the stamp is off. Hidden rather than removed: the saved
+    // values stay put, and switching back restores the previous appearance exactly.
+    foreach (['tone', 'fontsize', 'includedate', 'maxstampbytes', 'showfooter'] as $dependent) {
+        $settings->hide_if('mod_pdfsecure/' . $dependent, 'mod_pdfsecure/stampmode', 'eq', 'off');
+    }
 }

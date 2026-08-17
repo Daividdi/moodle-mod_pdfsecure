@@ -45,6 +45,24 @@ function pdfsecure_delete_instance($id) {
     return true;
 }
 
+/**
+ * The site's stamp mode: 'full' to watermark every view, 'off' to pass the document
+ * through unmarked.
+ *
+ * 'off' exists for sites whose workstations already apply their own watermark. A
+ * second mark layered on the first buys no attribution and costs legibility.
+ *
+ * @return string 'full' or 'off'
+ */
+function pdfsecure_stamp_mode(): string {
+    $mode = get_config('mod_pdfsecure', 'stampmode');
+    // get_config() returns false for a setting that was never saved, which is the
+    // state on every site that upgraded from before this option existed. Those sites
+    // were stamping, so that is what they must keep doing: the default has to be the
+    // old behaviour, never the new one.
+    return ($mode === 'off') ? 'off' : 'full';
+}
+
 function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options=array()) {
     global $USER;
 
@@ -53,9 +71,14 @@ function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
     }
 
     // Only the virtual `stamped` area is addressable. The real `content` area, which
-    // holds the untouched upload, has no route out of here at all - not for any user,
-    // not with any URL. Everything served from this plugin passes through the
-    // watermarker below, so there is no branch where the original can escape.
+    // holds the untouched upload, is refused here, so the upload has no URL of its
+    // own - there is no address a reader could construct to reach around this
+    // function, whatever it decides to serve.
+    //
+    // What comes OUT of this area depends on the site's stamp mode: the watermarked
+    // rendering, or the original bytes where the site already watermarks at the
+    // endpoint. The access control below runs identically either way. Delivery and
+    // marking are two separate questions, and only the second one is configurable.
     if ($filearea !== 'stamped') {
         return false;
     }
@@ -82,6 +105,25 @@ function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
     $source = $fs->get_file($context->id, 'mod_pdfsecure', 'content', 0, '/', $filename);
     if (!$source) {
         return false;
+    }
+
+    if (pdfsecure_stamp_mode() === 'off') {
+        // Stamping is off, so the document goes out as uploaded. Note what this does
+        // NOT relax: the login, enrolment and capability checks above have already
+        // run, and the `content` area is still unaddressable. What a reader gets here
+        // is the same file they would have got stamped, minus the mark.
+        //
+        // Streamed by Moodle rather than read into a string: without FPDI in the path
+        // there is no per-view rendering, so the size ceiling below stops applying and
+        // a 200 MB document is served without ever being held in memory. Byte ranges
+        // are safe again for the same reason - these bytes are the same on every
+        // request, so a browser resuming a transfer cannot stitch together two
+        // different generations of the file.
+        //
+        // forcedownload is hardcoded false, ignoring the URL parameter, so the
+        // document opens in the viewer rather than landing in the downloads folder.
+        send_stored_file($source, 0, 0, false, ['cacheability' => 'private']);
+        // send_stored_file() ends the request.
     }
 
     // The whole document is held in memory while it is rendered, and now that

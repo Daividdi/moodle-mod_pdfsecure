@@ -1,19 +1,25 @@
 <?php
 $string['pluginname'] = 'PDF Secure';
 $string['modulename'] = 'PDF Secure';
-$string['modulename_help'] = 'The PDF Secure module stamps every page of a PDF with the name of the user who opened it, and never serves the unstamped original. A document that can be read can always be copied - what this guarantees is that any copy in circulation identifies the account it came from.';
+$string['modulename_help'] = 'The PDF Secure module delivers course PDFs through an authenticated route, so the uploaded file has no URL of its own and the viewer opens without download or print controls. By default it also stamps every page with the name of the user who opened it: a document that can be read can always be copied, and what the stamp guarantees is that any copy in circulation identifies the account it came from. Sites whose workstations already apply their own watermark can turn the stamp off in the plugin settings and keep everything else.';
 $string['modulenameplural'] = 'PDF Secures';
 $string['pluginadministration'] = 'PDF Secure Administration';
 $string['pdfsecurename'] = 'PDF Name';
 $string['pdfsecurename_help'] = 'This is the name of the link that students will see on the course page.';
 
 // Strings for the form (Step 2)
-$string['watermarktext'] = 'Watermark settings';
-$string['enablewatermark'] = 'Enable watermark';
-$string['enablewatermark_help'] = 'If enabled, the student\'s name and email will be stamped on the PDF pages.';
+// watermarktext / enablewatermark / enablewatermark_help were removed in v2.1.0:
+// they were orphans with no setting, no form field and no database column behind
+// them, and once a real stamp switch existed they read like the control for it.
 $string['contentheader'] = 'PDF Document';
 $string['selectfile'] = 'Select the PDF file';
 $string['cannotstamp'] = 'This document could not be prepared for viewing. Please report this to the site administrator.';
+
+// Whether to stamp at all.
+$string['settingstampmode'] = 'Watermark the documents';
+$string['settingstampmode_desc'] = 'Whether this site burns a per-reader watermark into every PDF it serves. Turn it off only where the workstations already apply their own watermark - a second mark on top of the first adds no traceability and makes the document harder to read. Turning it off changes nothing else: the uploaded file still has no URL of its own, readers still have to be logged in and enrolled, the viewer still hides download and print, and the document text is still indexed for Global Search. It also removes the PDF rewriting step, so encrypted documents and files with links, bookmarks or form fields are served intact instead of being refused or flattened.';
+$string['stampmodefull'] = 'Yes - stamp every page with the reader\'s identity';
+$string['stampmodeoff'] = 'No - serve the document unmarked (for sites with endpoint watermarking)';
 
 // Watermark appearance settings.
 $string['settingtone'] = 'Watermark tone';

@@ -39,13 +39,15 @@ foreach ($files as $f) {
 }
 
 if ($file) {
-    // Stamp on first view, then serve only the stamped copy. Failure is fatal on
-    // purpose: falling back to the original "just this once" is exactly how the
-    // unstamped file escapes, and FPDI legitimately refuses some sources
-    // (encrypted PDFs above all).
-    // Points at the virtual `stamped` area, which regenerates the document on every
-    // request with the reader's identity and the current time. No itemid is needed:
-    // the stamp comes from the session, so the URL carries nothing worth editing.
+    // Points at the virtual `stamped` area - the only addressable area this plugin
+    // has. Where the site stamps, that area regenerates the document on every request
+    // with the reader's identity and the current time, and a document FPDI refuses is
+    // an error rather than a fallback to the original. Where the site has stamping
+    // turned off (endpoint watermarking already in place), the same area serves the
+    // document unmarked behind the same checks.
+    //
+    // No itemid either way: the reader's identity comes from the session, so the URL
+    // carries nothing worth editing.
     $fileurl = moodle_url::make_pluginfile_url($context->id, 'mod_pdfsecure',
         'stamped', 0, '/', $file->get_filename());
     $viewerpath = $CFG->wwwroot . '/mod/pdfsecure/pdfjs-drm/web/viewer.html';

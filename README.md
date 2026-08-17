@@ -1,7 +1,11 @@
 # PDF Secure (mod_pdfsecure)
 
-A Moodle activity module that serves course PDFs with a **per-user watermark burned
-into the file**, and never serves the unwatermarked original.
+A Moodle activity module that serves course PDFs through an authenticated route the
+uploaded file itself never has, with a **per-user watermark burned into the file**.
+
+The watermark can be switched off for sites that already watermark at the endpoint —
+see [Turning the watermark off](#turning-the-watermark-off). Everything below
+describes the default, stamping mode.
 
 ![Moodle](https://img.shields.io/badge/Moodle-4.5%20%E2%80%93%205.2-orange.svg)
 ![License](https://img.shields.io/badge/License-GPLv3-blue.svg)
@@ -121,11 +125,44 @@ The directory **must** be named `pdfsecure`.
 
 | Setting | Default | Notes |
 | --- | --- | --- |
+| Watermark the documents | Yes | Turn off where the workstations already watermark — see below. The appearance settings disappear when it is off. |
 | Watermark tone | Light | Darker survives a low-quality photo better; lighter reads through more comfortably |
 | Watermark text size | 11 pt | Larger is more legible in a photo of the screen, and covers more of the page |
 | Include date in the diagonal watermark | On | The footer stamp always carries the date regardless |
 | Show footer stamp | On | The legible line meant to be read by eye when tracing a leak |
 | Largest document to stamp | 40 MB | A document is held in memory while stamped, and that happens on every view. Larger files are refused rather than allowed to exhaust the PHP memory limit on each read. |
+
+### Turning the watermark off
+
+Some organisations already watermark at the endpoint — every managed workstation
+stamps whatever it displays. On those sites this module's mark lands on top of
+theirs. Two overlapping marks make the document measurably harder to read and add
+no attribution the organisation did not already have, so **Watermark the documents
+→ No** is the right setting there.
+
+It is a deliberately narrow switch. With the stamp off:
+
+- The uploaded file still has no URL of its own. The `content` area is unaddressable
+  in both modes; only the module's own delivery route exists.
+- Delivery still requires login, enrolment and `mod/pdfsecure:view`, checked on every
+  request.
+- The viewer still opens without download or print controls.
+- The document text is still indexed for Global Search.
+
+Three things genuinely change, and two of them are improvements:
+
+- **No identity in the file.** This is the point of the setting, and the reason to
+  only use it where something else provides the mark.
+- **Encrypted PDFs work.** FPDI cannot read them, so in stamping mode they fail
+  closed and the reader gets an error. Unmarked delivery has no PDF-rewriting step,
+  so they are served as uploaded.
+- **Links, bookmarks, annotations and form fields survive.** FPDI drops all of them
+  on import. Unmarked delivery does not touch the file, and the size ceiling stops
+  applying because nothing is held in memory.
+
+The default is **Yes** on purpose: a site upgrading from an earlier version never
+saved this setting, and a site that was stamping yesterday must still be stamping
+today.
 
 ---
 
