@@ -172,7 +172,10 @@ watermark off and needs no configuration after install:
 
 It is the **same component** with three lines changed, carrying the same
 `$plugin->version`, so the two builds replace each other by copying files — no
-upgrade, no downgrade, and activities keep working either way. Prefer the setting
+upgrade, no downgrade, and activities keep working either way. **Reload PHP after
+swapping**: OPcache serves the previously compiled `lib.php` until it revalidates,
+so for up to `opcache.revalidate_freq` seconds the site does the opposite of what
+the files say. Prefer the setting
 above if the site is comfortable managing settings; prefer that build if it should
 not be possible to forget the step.
 
