@@ -164,6 +164,22 @@ The default is **Yes** on purpose: a site upgrading from an earlier version neve
 saved this setting, and a site that was stamping yesterday must still be stamping
 today.
 
+#### A build with the default already inverted
+
+For sites that should never stamp, there is a variant build that ships with the
+watermark off and needs no configuration after install:
+[moodle-mod_pdfsecure-nowatermark](https://github.com/Daividdi/moodle-mod_pdfsecure-nowatermark).
+
+It is the **same component** with three lines changed, carrying the same
+`$plugin->version`, so the two builds replace each other by copying files — no
+upgrade, no downgrade, and activities keep working either way. Prefer the setting
+above if the site is comfortable managing settings; prefer that build if it should
+not be possible to forget the step.
+
+**If you change this plugin, that repository has to be re-synced** — it ships a
+`sync-from-upstream.sh` for exactly that. A variant left behind is how a security
+plugin quietly diverges from the one under review.
+
 ---
 
 ## Privacy
