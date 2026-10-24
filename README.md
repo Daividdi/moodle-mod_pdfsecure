@@ -185,6 +185,25 @@ plugin quietly diverges from the one under review.
 
 ---
 
+## Completion: reading to the end (v2.2.0)
+
+An activity can complete on view, or only when the person has **read the document**:
+at least 90 % of its pages, the last one included. The pdf.js viewer reports the pages
+shown, and a page counts once it has stayed in front of the reader for 1.5 seconds,
+so scrolling straight to the end reads nothing in between. Progress is kept per person
+(`pdfsecure_progress`), backed up with user data and exported/deleted by the privacy
+API, as are the per-person stamped copies.
+
+What it does not do: the page total comes from the viewer, so someone forging the
+web service call by hand could claim a one-page document. For internal training that
+is an accepted limit; the gamification on top of it (local_escalada) rewards the
+completion like any other.
+
+Switch it on per activity under *Completion conditions → Read to the end*, or for many
+activities at once with Moodle's bulk edit of activity completion.
+
+---
+
 ## Privacy
 
 The plugin writes the viewer's name, email and user id into the documents it
