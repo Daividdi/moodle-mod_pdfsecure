@@ -123,6 +123,142 @@ function anexar($fs, $origem, $novocmid) {
         ['subdirs' => 0, 'maxfiles' => 1]);
 }
 
+/**
+ * Todos os PDFs de uma pasta (mod_folder), na ordem em que a pasta os mostra.
+ */
+function pdfs_da_pasta($fs, $ctxid) {
+    $pdfs = [];
+    foreach ($fs->get_area_files($ctxid, 'mod_folder', 'content', 0, 'filepath, filename', false) as $f) {
+        if ($f->get_filesize() > 0 && strtolower(pathinfo($f->get_filename(), PATHINFO_EXTENSION)) === 'pdf') {
+            $pdfs[] = $f;
+        }
+    }
+    return $pdfs;
+}
+
+/**
+ * Poe a atividade $cmid logo depois de $depoisde na mesma seccao (ou deixa no fim, se $depoisde for a ultima).
+ */
+function posicionar_depois($DB, $cmid, $sectionid, $depoisde) {
+    $seq = explode(',', (string)$DB->get_field('course_sections', 'sequence', ['id' => $sectionid]));
+    $pos = array_search((string)$depoisde, $seq, true);
+    $seguinte = ($pos !== false && isset($seq[$pos + 1])) ? (int)$seq[$pos + 1] : null;
+    if ($seguinte && $seguinte != $cmid) {
+        $novocm = get_coursemodule_from_id('pdfsecure', $cmid, 0, false, MUST_EXIST);
+        $secao  = $DB->get_record('course_sections', ['id' => $sectionid], '*', MUST_EXIST);
+        moveto_module($novocm, $secao, $DB->get_record('course_modules', ['id' => $seguinte]));
+    }
+}
+
+/**
+ * Pasta: cada PDF vira uma atividade pdfsecure propria, na ordem da pasta, logo depois dela. Uma pasta guarda varios
+ * arquivos e o pdfsecure guarda um so, por isso a marca leva o numero do PDF: "migrado-folder-<cmid>" para o primeiro e
+ * "migrado-folder-<cmid>-<n>" para os seguintes. A pasta so e escondida quando TODOS os PDFs ja estao conferidos nas
+ * novas atividades e ela nao tem nada alem de PDF -- um video ou outro arquivo ficaria sem lugar.
+ */
+function migrar_pasta($r, $dry, $limite, &$feito, &$pulado, &$reparado, &$semarquivo, &$erro) {
+    global $DB, $modpdfsecure;
+    $fs = get_file_storage();
+    $ctx = context_module::instance($r->cmid);
+    $pdfs = pdfs_da_pasta($fs, $ctx->id);
+    if (!$pdfs) {
+        cli_writeln(sprintf("SEM PDF cm %-6s %-45s", $r->cmid, shorten_text($r->name, 45)));
+        $semarquivo++;
+        return;
+    }
+    $total = count($fs->get_area_files($ctx->id, 'mod_folder', 'content', 0, 'id', false));
+    $sopdf = count($pdfs) === $total;
+    $course = get_course($r->course);
+    $secnum = $DB->get_field('course_sections', 'section', ['id' => $r->sectionid]);
+    $anterior = $r->cmid;
+    $conferidos = 0;
+    foreach ($pdfs as $k => $pdf) {
+        $marca = 'migrado-folder-' . $r->cmid . ($k ? '-' . ($k + 1) : '');
+        $nome = count($pdfs) === 1 ? $r->name : $r->name . ' — ' . pathinfo($pdf->get_filename(), PATHINFO_FILENAME);
+        $ja = $DB->get_record('course_modules', ['idnumber' => $marca]);
+        if ($ja && pdfsecure_arquivo($fs, $ja->id)) {
+            cli_writeln(sprintf("PULA    cm %-6s %-45s ja migrado, com arquivo", $r->cmid, shorten_text($nome, 45)));
+            $pulado++;
+            $conferidos++;
+            $anterior = $ja->id;
+            continue;
+        }
+        if ($ja) {
+            cli_writeln(sprintf("REPARA  cm %-6s %-45s migrado SEM arquivo", $r->cmid, shorten_text($nome, 45)));
+            $reparado++;
+            $anterior = $ja->id;
+            if (!$dry) {
+                anexar($fs, $pdf, $ja->id);
+                if (pdfsecure_arquivo($fs, $ja->id)) {
+                    $conferidos++;
+                }
+            }
+            continue;
+        }
+        if ($limite && $feito >= $limite) {
+            cli_writeln("-- limite de {$limite} atingido no meio da pasta cm {$r->cmid}: ela continua visivel.");
+            break;
+        }
+        cli_writeln(sprintf("MIGRA   cm %-6s curso %-4s sec %-3s  %-38s  %s (%s)",
+            $r->cmid, $r->course, $secnum, shorten_text($nome, 38),
+            shorten_text($pdf->get_filename(), 32), display_size($pdf->get_filesize())));
+        if ($dry) {
+            $feito++;
+            continue;
+        }
+        try {
+            $mi = new stdClass();
+            $mi->modulename          = 'pdfsecure';
+            $mi->module              = $modpdfsecure->id;
+            $mi->course              = $r->course;
+            $mi->section             = $secnum;
+            $mi->name                = $nome;
+            $mi->intro               = $r->intro;
+            $mi->introformat         = $r->introformat;
+            $mi->visible             = $r->visible;
+            $mi->visibleoncoursepage = 1;
+            $mi->cmidnumber          = $marca;
+            $mi->groupmode           = 0;
+            $mi->groupingid          = 0;
+            $mi->availability        = null;
+            $mi->completion          = COMPLETION_TRACKING_NONE;
+            $mi->completionview      = 0;
+            $mi->completionexpected  = 0;
+            $mi->showdescription     = 0;
+            $mi = add_moduleinfo($mi, $course);
+            anexar($fs, $pdf, $mi->coursemodule);
+            $conferido = pdfsecure_arquivo($fs, $mi->coursemodule);
+            if (!$conferido) {
+                throw new moodle_exception('O arquivo nao ficou anexado; atividade nova mantida e pasta NAO escondida.');
+            }
+            posicionar_depois($DB, $mi->coursemodule, $r->sectionid, $anterior);
+            $anterior = $mi->coursemodule;
+            $conferidos++;
+            $feito++;
+            cli_writeln("        -> novo cm {$mi->coursemodule}, arquivo " . $conferido->get_filename());
+        } catch (Throwable $e) {
+            $erro++;
+            cli_writeln("        !! ERRO: " . $e->getMessage());
+        }
+    }
+    if ($dry) {
+        if (!$sopdf) {
+            cli_writeln("        (pasta com outros arquivos alem de PDF: continuaria visivel)");
+        }
+        return;
+    }
+    if ($conferidos === count($pdfs) && $sopdf) {
+        // Esconde a pasta SO depois de conferir todos os PDFs nas novas.
+        set_coursemodule_visible($r->cmid, 0);
+        cli_writeln("        -> pasta cm {$r->cmid} escondida ({$conferidos} PDF(s) conferidos)");
+    } else if (!$sopdf) {
+        cli_writeln("        -> pasta cm {$r->cmid} mantida visivel: tem outros arquivos alem de PDF");
+    } else {
+        cli_writeln("        -> pasta cm {$r->cmid} mantida visivel: {$conferidos} de " . count($pdfs) . " PDFs conferidos");
+    }
+    rebuild_course_cache($r->course, true);
+}
+
 cli_heading(($dry ? 'SIMULACAO (nada sera gravado)' : 'MIGRACAO REAL') . " -- origem: {$source}");
 
 $where  = $opt['course'] ? "WHERE cm.course = :courseid" : "";
@@ -144,6 +280,11 @@ foreach ($rows as $r) {
     if ($opt['limit'] && $feito >= $opt['limit']) {
         cli_writeln("-- limite de {$opt['limit']} atingido, parando (reparos nao contam).");
         break;
+    }
+
+    if ($source === 'folder') {
+        migrar_pasta($r, $dry, $opt['limit'], $feito, $pulado, $reparado, $semarquivo, $erro);
+        continue;
     }
 
     $ctxvelho = context_module::instance($r->cmid);

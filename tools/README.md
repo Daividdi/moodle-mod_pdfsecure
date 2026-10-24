@@ -68,6 +68,15 @@ sudo -u www-data php search/cli/indexer.php --reindex
 `--source` é o nome do módulo na tabela `modules` (ex.: `pdfprotect`). Descubra
 com uma consulta em `{modules}` × `{course_modules}`.
 
+## Origem `resource` e `folder` (Moodle nativo)
+
+- `--source=resource`: cada "Arquivo" cujo arquivo e um PDF vira uma atividade pdfsecure, como os outros modulos.
+- `--source=folder`: uma pasta guarda varios arquivos e o pdfsecure guarda um so, entao **cada PDF da pasta vira uma
+  atividade propria**, na ordem da pasta, logo depois dela, com o nome "Pasta — arquivo" quando ha mais de um. As marcas
+  sao `migrado-folder-<cmid>` (primeiro PDF) e `migrado-folder-<cmid>-<n>` (os seguintes). A pasta so e escondida quando
+  todos os PDFs ja estao conferidos nas novas e ela nao tem nada alem de PDF: uma pasta com video continua visivel.
+- Depois da migracao, `enable_read_completion.php` liga a leitura ate o fim nas atividades novas.
+
 ## Duas coisas que custaram uma rodada
 
 **`pdfsecure_add_instance()` só grava o arquivo `if ($mform)`** — ou seja, só
