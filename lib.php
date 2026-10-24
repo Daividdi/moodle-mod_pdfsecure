@@ -1,46 +1,120 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Declares the features supported by PDF Secure.
+ *
+ * @param string $feature Moodle feature constant.
+ * @return bool|string|null Feature support value.
+ */
 function pdfsecure_supports($feature) {
     switch($feature) {
         case FEATURE_MOD_INTRO: return true;
         case FEATURE_SHOW_DESCRIPTION: return true;
         case FEATURE_BACKUP_MOODLE2: return true;
+        case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
+        case FEATURE_COMPLETION_HAS_RULES: return true;
+        case FEATURE_MOD_PURPOSE: return MOD_PURPOSE_CONTENT;
         default: return null;
     }
 }
 
+/**
+ * Returns information about a PDF Secure activity for the course page cache.
+ *
+ * @param stdClass $coursemodule Course module record.
+ * @return cached_cm_info|false Information for the course page, or false if missing.
+ */
+function pdfsecure_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $pdfsecure = $DB->get_record('pdfsecure', ['id' => $coursemodule->instance],
+        'id, name, intro, introformat, completionreadall');
+    if (!$pdfsecure) {
+        return false;
+    }
+
+    $info = new cached_cm_info();
+    $info->name = format_string($pdfsecure->name);
+    if (!empty($coursemodule->showdescription)) {
+        $info->content = format_module_intro('pdfsecure', $pdfsecure, $coursemodule->id, false);
+    }
+
+    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+        $info->customdata['customcompletionrules']['completionreadall'] = (int)$pdfsecure->completionreadall;
+    }
+
+    return $info;
+}
+
+/**
+ * Creates a PDF Secure activity instance.
+ *
+ * @param stdClass $pdfsecure Activity data.
+ * @param moodleform_mod|null $mform Activity form.
+ * @return int New activity instance ID.
+ */
 function pdfsecure_add_instance($pdfsecure, $mform = null) {
     global $DB;
+    $pdfsecure->completionreadall = !empty($pdfsecure->completionreadall) ? 1 : 0;
     $pdfsecure->timecreated = time();
     $pdfsecure->timemodified = time();
     $pdfsecure->id = $DB->insert_record('pdfsecure', $pdfsecure);
 
     if ($mform) {
         $context = context_module::instance($pdfsecure->coursemodule);
-        file_save_draft_area_files($pdfsecure->pdf_file, $context->id, 'mod_pdfsecure', 'content', 0, array('subdirs' => 0, 'maxfiles' => 1));
+        file_save_draft_area_files(
+            $pdfsecure->pdf_file,
+            $context->id,
+            'mod_pdfsecure',
+            'content',
+            0,
+            ['subdirs' => 0, 'maxfiles' => 1]
+        );
     }
     return $pdfsecure->id;
 }
 
+/**
+ * Updates a PDF Secure activity instance.
+ *
+ * @param stdClass $pdfsecure Activity data.
+ * @param moodleform_mod|null $mform Activity form.
+ * @return bool Whether the update succeeded.
+ */
 function pdfsecure_update_instance($pdfsecure, $mform = null) {
     global $DB;
+    $pdfsecure->completionreadall = !empty($pdfsecure->completionreadall) ? 1 : 0;
     $pdfsecure->timemodified = time();
     $pdfsecure->id = $pdfsecure->instance;
     $DB->update_record('pdfsecure', $pdfsecure);
 
     if ($mform) {
         $context = context_module::instance($pdfsecure->coursemodule);
-        file_save_draft_area_files($pdfsecure->pdf_file, $context->id, 'mod_pdfsecure', 'content', 0, array('subdirs' => 0, 'maxfiles' => 1));
+        file_save_draft_area_files(
+            $pdfsecure->pdf_file,
+            $context->id,
+            'mod_pdfsecure',
+            'content',
+            0,
+            ['subdirs' => 0, 'maxfiles' => 1]
+        );
     }
     return true;
 }
 
+/**
+ * Deletes an activity instance and its reading progress.
+ *
+ * @param int $id Activity instance ID.
+ * @return bool Whether the instance existed and was deleted.
+ */
 function pdfsecure_delete_instance($id) {
     global $DB;
     if (!$pdfsecure = $DB->get_record('pdfsecure', array('id' => $id))) {
         return false;
     }
+    $DB->delete_records('pdfsecure_progress', ['pdfsecureid' => $pdfsecure->id]);
     $DB->delete_records('pdfsecure', array('id' => $pdfsecure->id));
     return true;
 }
@@ -63,6 +137,18 @@ function pdfsecure_stamp_mode(): string {
     return ($mode === 'off') ? 'off' : 'full';
 }
 
+/**
+ * Serves protected PDF content through the module file endpoint.
+ *
+ * @param stdClass $course Course record.
+ * @param stdClass $cm Course module record.
+ * @param context $context File context.
+ * @param string $filearea Requested file area.
+ * @param array $args File path arguments.
+ * @param bool $forcedownload Whether to force download.
+ * @param array $options File serving options.
+ * @return bool False when the requested file cannot be served.
+ */
 function pdfsecure_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options=array()) {
     global $USER;
 
