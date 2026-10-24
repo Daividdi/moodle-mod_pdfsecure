@@ -142,9 +142,17 @@ export const init = async(cmid) => {
         }
     };
 
-    eventBus.on('pagechanging', (event) => recordPage(event.pageNumber));
+    // A page counts once it has stayed in front of the reader for a moment: scrolling straight to the end does not
+    // read the pages in between.
+    const DWELL = 1500;
+    let dwell;
+    const settle = (pageNumber) => {
+        window.clearTimeout(dwell);
+        dwell = window.setTimeout(() => recordPage(pageNumber), DWELL);
+    };
+    eventBus.on('pagechanging', (event) => settle(event.pageNumber));
     if (await waitForDocument(application)) {
-        recordPage(application.page);
+        settle(application.page);
     }
 
     document.addEventListener('visibilitychange', () => {

@@ -8,11 +8,12 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
 /**
  * Privacy API provider for PDF Secure reading progress and derivatives.
  *
@@ -23,24 +24,22 @@
 
 namespace mod_pdfsecure\privacy;
 
-use \core_privacy\local\metadata\collection;
-use \core_privacy\local\request\approved_contextlist;
-use \core_privacy\local\request\approved_userlist;
-use \core_privacy\local\request\contextlist;
-use \core_privacy\local\request\core_userlist_provider;
-use \core_privacy\local\request\plugin\provider as plugin_provider;
-use \core_privacy\local\request\transform;
-use \core_privacy\local\request\userlist;
-use \core_privacy\local\request\writer;
-use \core_privacy\local\metadata\provider as metadata_provider;
+use core_privacy\local\metadata\collection;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\contextlist;
+use core_privacy\local\request\core_userlist_provider;
+use core_privacy\local\request\plugin\provider as plugin_provider;
+use core_privacy\local\request\transform;
+use core_privacy\local\request\userlist;
+use core_privacy\local\request\writer;
+use core_privacy\local\metadata\provider as metadata_provider;
 
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Privacy API implementation for PDF Secure reading progress and derivatives.
  */
-class provider implements metadata_provider, plugin_provider, core_userlist_provider {
-
+class provider implements core_userlist_provider, metadata_provider, plugin_provider {
     /**
      * Describes the personal data stored by this plugin.
      *

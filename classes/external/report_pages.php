@@ -8,11 +8,12 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
 /**
  * External API for reporting PDF Secure reading progress.
  *
@@ -23,24 +24,27 @@
 
 namespace mod_pdfsecure\external;
 
-defined('MOODLE_INTERNAL') || die();
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
+use core_external\external_single_structure;
+use core_external\external_value;
 
 /**
  * External API for recording pages seen in a PDF Secure activity.
  */
-class report_pages extends \core_external\external_api {
-
+class report_pages extends external_api {
     /**
      * Describes the parameters for reporting visible pages.
      *
-     * @return \external_function_parameters Parameter definition.
+     * @return external_function_parameters Parameter definition.
      */
     public static function execute_parameters() {
-        return new \external_function_parameters([
-            'cmid' => new \external_value(PARAM_INT, 'Course module ID'),
-            'pages' => new \external_value(PARAM_INT, 'Total number of pages'),
-            'seen' => new \external_multiple_structure(
-                new \external_value(PARAM_INT, 'A page number reported as seen')
+        return new external_function_parameters([
+            'cmid' => new external_value(PARAM_INT, 'Course module ID'),
+            'pages' => new external_value(PARAM_INT, 'Total number of pages'),
+            'seen' => new external_multiple_structure(
+                new external_value(PARAM_INT, 'A page number reported as seen')
             ),
         ]);
     }
@@ -120,8 +124,10 @@ class report_pages extends \core_external\external_api {
         $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
         $cm = get_fast_modinfo($course)->get_cm($cm->id);
         $completion = new \completion_info($course);
-        if ($complete && !empty($activity->completionreadall)
-                && $cm->completion == COMPLETION_TRACKING_AUTOMATIC && $completion->is_enabled($cm)) {
+        if (
+            $complete && !empty($activity->completionreadall)
+                && $cm->completion == COMPLETION_TRACKING_AUTOMATIC && $completion->is_enabled($cm)
+        ) {
             $completion->update_state($cm, COMPLETION_COMPLETE, $USER->id);
         }
 
@@ -135,13 +141,13 @@ class report_pages extends \core_external\external_api {
     /**
      * Describes the result returned to the viewer.
      *
-     * @return \external_single_structure Return value definition.
+     * @return external_single_structure Return value definition.
      */
     public static function execute_returns() {
-        return new \external_single_structure([
-            'seen' => new \external_value(PARAM_INT, 'Number of distinct pages seen'),
-            'pages' => new \external_value(PARAM_INT, 'Clamped total number of pages'),
-            'complete' => new \external_value(PARAM_BOOL, 'Whether the read-to-end rule is complete'),
+        return new external_single_structure([
+            'seen' => new external_value(PARAM_INT, 'Number of distinct pages seen'),
+            'pages' => new external_value(PARAM_INT, 'Clamped total number of pages'),
+            'complete' => new external_value(PARAM_BOOL, 'Whether the read-to-end rule is complete'),
         ]);
     }
 }

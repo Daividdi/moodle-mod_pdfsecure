@@ -8,11 +8,12 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
 /**
  * Course module view event for the PDF Secure activity module.
  *
@@ -23,13 +24,11 @@
 
 namespace mod_pdfsecure\event;
 
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Event triggered when a user views a PDF Secure activity.
  */
 class course_module_viewed extends \core\event\course_module_viewed {
-
     /**
      * Initializes the base view event with the PDF Secure activity table.
      */

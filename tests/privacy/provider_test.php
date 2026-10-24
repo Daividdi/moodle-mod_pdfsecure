@@ -8,11 +8,12 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
 /**
  * Tests privacy API behaviour for PDF Secure.
  *
@@ -23,15 +24,14 @@
 
 namespace mod_pdfsecure\privacy;
 
-use \core_privacy\local\request\writer;
+use core_privacy\local\request\writer;
 
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Tests export and deletion of PDF Secure reading progress and derivatives.
+ * @covers     \mod_pdfsecure\privacy\provider
  */
 final class provider_test extends \core_privacy\tests\provider_testcase {
-
     /**
      * Resets the Moodle fixture database for each privacy test.
      */
@@ -95,7 +95,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->create_watermarked_file($context, $user->id);
 
         $contexts = provider::get_contexts_for_userid($user->id);
-        $this->assertContains($context->id, $contexts->get_contextids());
+        $this->assertContains($context->id, array_map('intval', $contexts->get_contextids()));
         $this->export_context_data_for_user($user->id, $context, 'mod_pdfsecure');
         $writer = writer::with_context($context);
         $exported = $writer->get_data([get_string('privacy:exportpath', 'mod_pdfsecure')]);
@@ -145,9 +145,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $userlist = new \core_privacy\local\request\userlist($fixture['context'], 'mod_pdfsecure');
         provider::get_users_in_context($userlist);
-        $userids = $userlist->get_userids();
+        $userids = array_map('intval', $userlist->get_userids());
         sort($userids);
-        $expected = [$fixture['user']->id, $otheruser->id];
+        $expected = [(int)$fixture['user']->id, (int)$otheruser->id];
         sort($expected);
         $this->assertSame($expected, $userids);
 

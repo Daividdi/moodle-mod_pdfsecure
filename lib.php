@@ -35,7 +35,8 @@ function pdfsecure_get_coursemodule_info($coursemodule) {
     }
 
     $info = new cached_cm_info();
-    $info->name = format_string($pdfsecure->name);
+    // Stored raw: the course cache is built without a page, and Moodle formats the name where it shows it.
+    $info->name = $pdfsecure->name;
     if (!empty($coursemodule->showdescription)) {
         $info->content = format_module_intro('pdfsecure', $pdfsecure, $coursemodule->id, false);
     }

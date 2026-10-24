@@ -8,11 +8,12 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
 /**
  * Tests the PDF Secure custom completion rule.
  *
@@ -23,13 +24,12 @@
 
 namespace mod_pdfsecure\completion;
 
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Tests the read-to-end custom completion rule.
+ * @covers     \mod_pdfsecure\completion\custom_completion
  */
 final class custom_completion_test extends \advanced_testcase {
-
     /**
      * Confirms that completion state follows the user's progress row.
      */
