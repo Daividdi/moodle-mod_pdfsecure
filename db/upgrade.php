@@ -43,8 +43,7 @@ function xmldb_pdfsecure_upgrade($oldversion) {
             null,
             XMLDB_NOTNULL,
             null,
-            '0',
-            'timemodified'
+            '0'
         );
         if (!$dbman->field_exists($activitytable, $completionfield)) {
             $dbman->add_field($activitytable, $completionfield);

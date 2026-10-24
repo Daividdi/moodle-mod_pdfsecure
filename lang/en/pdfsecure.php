@@ -65,7 +65,6 @@ $string['completionreadall_help'] = 'The learner must view at least 90% of the p
     . 'Jumping straight to the last page does not complete this rule.';
 $string['completiondetail:readall'] = 'Read at least 90% of the pages and the last page.';
 $string['eventcoursemoduleviewed'] = 'PDF Secure activity viewed';
-$string['service:reportpages'] = 'Records the pages a user has viewed in a PDF Secure activity and updates read-to-end completion.';
 
 $string['privacy:exportpath'] = 'PDF reading progress';
 $string['privacy:watermarkedpath'] = 'Watermarked PDF derivatives';
@@ -77,4 +76,6 @@ $string['privacy:metadata:pdfsecure_progress:seen'] = 'The distinct page numbers
 $string['privacy:metadata:pdfsecure_progress:timemodified'] = 'The time when reading progress was last updated.';
 $string['privacy:metadata:pdfsecure_progress:timecompleted'] = 'The time when the read-to-end rule was first met.';
 $string['privacy:metadata:watermarked'] = 'PDF Secure can store per-user watermarked PDF derivatives in Moodle file storage.';
-
+$string['resetprogress'] = 'Delete reading progress';
+$string['pdfsecure:addinstance'] = 'Add a new PDF Secure activity';
+$string['pdfsecure:view'] = 'View PDF Secure activities';

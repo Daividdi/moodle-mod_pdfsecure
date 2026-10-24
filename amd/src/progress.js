@@ -96,9 +96,11 @@ export const init = async(cmid) => {
     let debounce;
     let flushing = false;
 
+    // After a failed call (an expired session, the network down) retry less and less often.
+    let retry = 2000;
     const scheduleFlush = () => {
         window.clearTimeout(debounce);
-        debounce = window.setTimeout(flush, 2000);
+        debounce = window.setTimeout(flush, retry);
     };
 
     const recordPage = (pageNumber) => {
@@ -132,8 +134,10 @@ export const init = async(cmid) => {
                 reported.add(pageNumber);
                 pending.delete(pageNumber);
             });
+            retry = 2000;
         } catch (error) {
             batch.forEach((pageNumber) => pending.add(pageNumber));
+            retry = Math.min(60000, retry * 2);
         } finally {
             flushing = false;
             if (pending.size > 0) {
@@ -157,6 +161,10 @@ export const init = async(cmid) => {
 
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
+            // Leaving: the page in front of the reader counts now (someone who reaches the last page and closes the
+            // tab at once has read it), then everything pending goes.
+            window.clearTimeout(dwell);
+            recordPage(application.page);
             flush();
         }
     });

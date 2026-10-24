@@ -27,6 +27,7 @@ namespace mod_pdfsecure\privacy;
 use core_privacy\local\request\writer;
 
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_pdfsecure\privacy\provider::class)]
 /**
  * Tests export and deletion of PDF Secure reading progress and derivatives.
  * @covers     \mod_pdfsecure\privacy\provider

@@ -110,6 +110,53 @@ function pdfsecure_update_instance($pdfsecure, $mform = null) {
  * @param int $id Activity instance ID.
  * @return bool Whether the instance existed and was deleted.
  */
+/**
+ * Adds the reading progress option to the course reset form.
+ *
+ * @param MoodleQuickForm $mform Course reset form.
+ * @return void
+ */
+function pdfsecure_reset_course_form_definition(&$mform) {
+    $mform->addElement('header', 'pdfsecureheader', get_string('modulenameplural', 'pdfsecure'));
+    $mform->addElement('advcheckbox', 'reset_pdfsecure_progress', get_string('resetprogress', 'pdfsecure'));
+}
+
+/**
+ * Reading progress is reset by default with the course.
+ *
+ * @param stdClass $course Course being reset.
+ * @return array Default form values.
+ */
+function pdfsecure_reset_course_form_defaults($course) {
+    return ['reset_pdfsecure_progress' => 1];
+}
+
+/**
+ * Removes reading progress on course reset, so a reset course does not complete everyone again at once.
+ *
+ * Progress also goes when the reset deletes completion data, since the rule would otherwise restore it.
+ *
+ * @param stdClass $data Course reset form data.
+ * @return array Status lines for the reset report.
+ */
+function pdfsecure_reset_userdata($data) {
+    global $DB;
+    $status = [];
+    if (!empty($data->reset_pdfsecure_progress) || !empty($data->reset_completion)) {
+        $DB->delete_records_select(
+            'pdfsecure_progress',
+            'pdfsecureid IN (SELECT id FROM {pdfsecure} WHERE course = :course)',
+            ['course' => $data->courseid]
+        );
+        $status[] = [
+            'component' => get_string('modulenameplural', 'pdfsecure'),
+            'item' => get_string('resetprogress', 'pdfsecure'),
+            'error' => false,
+        ];
+    }
+    return $status;
+}
+
 function pdfsecure_delete_instance($id) {
     global $DB;
     if (!$pdfsecure = $DB->get_record('pdfsecure', array('id' => $id))) {

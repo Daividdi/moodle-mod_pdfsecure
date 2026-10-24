@@ -25,6 +25,7 @@
 namespace mod_pdfsecure\external;
 
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_pdfsecure\external\report_pages::class)]
 /**
  * Tests page reporting and read-to-end completion.
  * @covers     \mod_pdfsecure\external\report_pages

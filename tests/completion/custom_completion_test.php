@@ -25,6 +25,7 @@
 namespace mod_pdfsecure\completion;
 
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_pdfsecure\completion\custom_completion::class)]
 /**
  * Tests the read-to-end custom completion rule.
  * @covers     \mod_pdfsecure\completion\custom_completion

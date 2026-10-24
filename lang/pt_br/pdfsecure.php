@@ -28,7 +28,6 @@ $string['completionreadall_help'] = 'O estudante precisa visualizar pelo menos 9
     . 'última página. Ir direto ao fim não conclui esta regra.';
 $string['completiondetail:readall'] = 'Ler pelo menos 90% das páginas e a última página.';
 $string['eventcoursemoduleviewed'] = 'Atividade PDF Secure visualizada';
-$string['service:reportpages'] = 'Registra as páginas visualizadas e atualiza a conclusão de leitura até o fim.';
 
 $string['privacy:exportpath'] = 'Progresso de leitura do PDF';
 $string['privacy:watermarkedpath'] = 'Derivados de PDF com marca d\'água';
@@ -43,3 +42,6 @@ $string['privacy:metadata:pdfsecure_progress:timecompleted'] = 'O horário em qu
     . 'primeira vez.';
 $string['privacy:metadata:watermarked'] = 'O PDF Secure pode guardar derivados de PDF com marca d\'água por usuário no '
     . 'armazenamento de arquivos do Moodle.';
+$string['resetprogress'] = 'Apagar o progresso de leitura';
+$string['pdfsecure:addinstance'] = 'Adicionar uma atividade PDF Secure';
+$string['pdfsecure:view'] = 'Ver atividades PDF Secure';
