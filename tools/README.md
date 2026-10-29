@@ -70,12 +70,26 @@ com uma consulta em `{modules}` × `{course_modules}`.
 
 ## Origem `resource` e `folder` (Moodle nativo)
 
-- `--source=resource`: cada "Arquivo" cujo arquivo e um PDF vira uma atividade pdfsecure, como os outros modulos.
+- `--source=resource`: cada "Arquivo" cujo arquivo e um PDF vira uma atividade pdfsecure, como os outros modulos. O mesmo conversor compartilhado e usado pelos eventos e pela tarefa agendada do plugin.
 - `--source=folder`: uma pasta guarda varios arquivos e o pdfsecure guarda um so, entao **cada PDF da pasta vira uma
   atividade propria**, na ordem da pasta, logo depois dela, com o nome "Pasta — arquivo" quando ha mais de um. As marcas
   sao `migrado-folder-<cmid>` (primeiro PDF) e `migrado-folder-<cmid>-<n>` (os seguintes). A pasta so e escondida quando
-  todos os PDFs ja estao conferidos nas novas e ela nao tem nada alem de PDF: uma pasta com video continua visivel.
-- Depois da migracao, `enable_read_completion.php` liga a leitura ate o fim nas atividades novas.
+  todos os PDFs ja estao conferidos nas novas e ela nao tem nada alem de PDF: uma pasta com video continua visivel e os
+  PDFs confirmados saem da pasta. Se um PDF Secure marcado ja tiver sido atualizado, ele e preservado e o PDF restante
+  ganha uma copia protegida com marca `-source` antes de sair da pasta.
+- O conversor preserva disponibilidade e visibilidade; Arquivo e Pasta nao têm modo de grupo. Para Arquivo, transfere as conclusoes existentes e redireciona os criterios do curso e as condicoes de disponibilidade que dependiam do modulo antigo.
+- A configuracao **PDFs somente como PDF Secure** ativa a validacao dos formularios, a conversao por evento e a varredura horaria. Ela fica desligada por padrao. A migracao explicita da CLI continua funcionando mesmo quando a configuracao esta desligada.
+- A leitura ate o fim so e ativada automaticamente na nova atividade quando o curso tem conclusao habilitada e o modulo Arquivo original rastreava conclusao.
+
+## Origem `pdfprotect`
+
+`--source=pdfprotect` usa o mesmo conversor das atividades Arquivo, incluindo disponibilidade,
+visibilidade, posição, conclusão, critérios e condições de disponibilidade. Ele preserva a atividade
+original oculta, sem removê-la nem desinstalar `mod_pdfprotect`. Quando **PDFs somente como PDF Secure**
+está ativada, os eventos e a varredura horária também convertem atividades `pdfprotect`; sem o módulo
+instalado, essa origem não é considerada.
+
+Outros módulos de PDF de terceiros continuam usando o caminho genérico da ferramenta.
 
 ## Duas coisas que custaram uma rodada
 

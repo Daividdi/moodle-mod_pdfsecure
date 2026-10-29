@@ -18,7 +18,7 @@
  * External service definitions for the PDF Secure activity module.
  *
  * @package mod_pdfsecure
- * @copyright 2026 Aditek / Angel Aligner
+ * @copyright 2026 Angel Aligner
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

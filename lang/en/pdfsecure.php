@@ -10,6 +10,14 @@ $string['modulenameplural'] = 'PDF Secures';
 $string['pluginadministration'] = 'PDF Secure Administration';
 $string['pdfsecurename'] = 'PDF Name';
 $string['pdfsecurename_help'] = 'This is the name of the link that students will see on the course page.';
+$string['settingonlysecure'] = 'PDFs only as PDF Secure';
+$string['settingonlysecure_desc'] = 'When enabled, blocks PDFs in Moodle File and Folder forms, offers PDF Secure for drag-and-drop PDFs, '
+    . 'and converts PDFs created through other paths, including installed PDFProtect activities. Existing activities are kept but hidden after their PDFs are confirmed in PDF Secure. '
+    . 'This covers File, Folder and PDFProtect activities; it does not change PDFs in forum posts, assignment submissions, interactive videos or certificates.';
+$string['onlysecurevalidation'] = 'PDFs go in a PDF Secure activity (Add an activity or resource › PDF Secure), which protects them and records how far each person read. Remove the PDF from this File or Folder.';
+$string['dnduploadpdfsecure'] = 'Create a PDF Secure activity (protected PDF)';
+$string['taskconvertplainpdfs'] = 'Convert a source activity PDF to PDF Secure';
+$string['tasksweepplainpdfs'] = 'Sweep supported activities for PDFs';
 
 // Strings for the form (Step 2)
 // watermarktext / enablewatermark / enablewatermark_help were removed in v2.1.0:

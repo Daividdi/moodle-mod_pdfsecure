@@ -132,6 +132,31 @@ The directory **must** be named `pdfsecure`.
 | Show footer stamp | On | The legible line meant to be read by eye when tracing a leak |
 | Largest document to stamp | 40 MB | A document is held in memory while stamped, and that happens on every view. Larger files are refused rather than allowed to exhaust the PHP memory limit on each read. |
 
+### Only PDF Secure
+
+Turn on **PDFs only as PDF Secure** to keep PDFs in Moodle's native **File** and
+**Folder** activities from being served as ordinary files. The setting is off by
+default, so an upgrade keeps the existing behavior until an administrator enables it.
+
+With the setting on, Moodle rejects a PDF in a File or Folder activity form before
+the activity is saved and offers PDF Secure when a `.pdf` is dragged onto a course.
+If another path creates or updates a File or Folder containing a PDF — such as
+drag-and-drop chosen as File, Folder editing, restore, import or a web service — an
+event queues conversion, and an hourly sweep catches anything an event missed. A
+PDFProtect activity is also converted when that module is installed. A
+File becomes one PDF Secure activity immediately after it, with its visibility,
+availability and completion carried over. Each PDF in a Folder gets
+its own activity in folder order. The original activity is kept and hidden only
+after the protected copy is confirmed; a Folder stays visible while it contains
+anything besides PDFs, and confirmed PDFs are removed from a mixed Folder while its
+other files remain.
+
+This applies to Moodle's File and Folder activities and installed PDFProtect
+activities. It does not change PDFs in forum posts, assignment submissions,
+interactive videos or certificates. The
+`tools/migrate_pdf.php` administrator migration remains available for an explicit
+run on `resource`, `folder` and installed `pdfprotect` activities.
+
 ### Turning the watermark off
 
 Some organisations already watermark at the endpoint — every managed workstation

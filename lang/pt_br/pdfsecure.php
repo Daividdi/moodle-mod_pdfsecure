@@ -10,6 +10,14 @@ $string['modulenameplural'] = 'PDFs Secures';
 $string['pluginadministration'] = 'Administração do PDF Secure';
 $string['pdfsecurename'] = 'Nome do PDF';
 $string['pdfsecurename_help'] = 'Este é o nome do link que os estudantes verão na página do curso.';
+$string['settingonlysecure'] = 'PDFs somente como PDF Secure';
+$string['settingonlysecure_desc'] = 'Quando ativada, bloqueia PDFs nos formulários das atividades Arquivo e Pasta, oferece PDF Secure para PDFs arrastados '
+    . 'ao curso e converte PDFs criados por outros caminhos, incluindo atividades PDFProtect quando o módulo está instalado. As atividades existentes são mantidas, mas ficam ocultas depois que os PDFs são confirmados '
+    . 'no PDF Secure. Isto se aplica às atividades Arquivo, Pasta e PDFProtect; não altera PDFs em publicações de fórum, envios de tarefas, vídeos interativos ou certificados.';
+$string['onlysecurevalidation'] = 'PDFs ficam numa atividade PDF Secure (Adicionar uma atividade ou recurso › PDF Secure), que os protege e registra até onde cada pessoa leu. Remova o PDF desta atividade Arquivo ou Pasta.';
+$string['dnduploadpdfsecure'] = 'Criar uma atividade PDF Secure (PDF protegido)';
+$string['taskconvertplainpdfs'] = 'Converter PDF de uma atividade para PDF Secure';
+$string['tasksweepplainpdfs'] = 'Procurar PDFs nas atividades compatíveis';
 
 // Se deve carimbar.
 $string['settingstampmode'] = 'Aplicar marca d\'água nos documentos';

@@ -18,7 +18,7 @@
  * Tests the PDF Secure custom completion rule.
  *
  * @package mod_pdfsecure
- * @copyright 2026 Aditek / Angel Aligner
+ * @copyright 2026 Angel Aligner
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -35,7 +35,8 @@ final class custom_completion_test extends \advanced_testcase {
      * Confirms that completion state follows the user's progress row.
      */
     public function test_completion_state_reflects_progress(): void {
-        global $DB;
+        global $CFG, $DB;
+        require_once($CFG->libdir . '/completionlib.php');
 
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['enablecompletion' => COMPLETION_ENABLED]);

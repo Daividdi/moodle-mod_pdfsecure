@@ -18,7 +18,7 @@
  * Tests page reporting for the PDF Secure activity module.
  *
  * @package mod_pdfsecure
- * @copyright 2026 Aditek / Angel Aligner
+ * @copyright 2026 Angel Aligner
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -37,6 +37,8 @@ final class report_pages_test extends \advanced_testcase {
      * @return array{course: \stdClass, activity: \stdClass, cmid: int, user: \stdClass}
      */
     private function create_activity_and_reader(): array {
+        global $CFG;
+        require_once($CFG->libdir . '/completionlib.php');
         $course = $this->getDataGenerator()->create_course(['enablecompletion' => COMPLETION_ENABLED]);
         $activity = $this->getDataGenerator()->create_module('pdfsecure', [
             'course' => $course->id,

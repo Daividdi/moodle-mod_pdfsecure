@@ -186,6 +186,125 @@ function pdfsecure_stamp_mode(): string {
 }
 
 /**
+ * Refuses PDFs in Moodle's native File and Folder activities when onlysecure is enabled.
+ *
+ * @param moodleform_mod $mform Activity form being validated.
+ * @param array|stdClass $data Submitted form data.
+ * @return array Form errors keyed by element name.
+ */
+function pdfsecure_coursemodule_validation($mform, $data) {
+    global $USER;
+
+    if (empty(get_config('mod_pdfsecure', 'onlysecure'))) {
+        return [];
+    }
+
+    $values = (array)$data;
+    if (empty($values['modulename']) || !in_array($values['modulename'], ['resource', 'folder'], true)) {
+        return [];
+    }
+    $draftitemid = (int)($values['files'] ?? 0);
+    if (!$draftitemid || empty($USER->id)) {
+        return [];
+    }
+
+    $contextid = context_user::instance($USER->id)->id;
+    $files = get_file_storage()->get_area_files($contextid, 'user', 'draft', $draftitemid, 'filepath, filename', false);
+    foreach ($files as $file) {
+        if ($file->get_mimetype() === 'application/pdf'
+                || strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION)) === 'pdf') {
+            return ['files' => get_string('onlysecurevalidation', 'mod_pdfsecure')];
+        }
+    }
+
+    return [];
+}
+
+/**
+ * Register the PDF Secure activity for drag-and-drop PDF uploads.
+ *
+ * @return array Supported file types.
+ */
+function pdfsecure_dndupload_register() {
+    return ['files' => [
+        ['extension' => 'pdf', 'message' => get_string('dnduploadpdfsecure', 'mod_pdfsecure')],
+    ]];
+}
+
+/**
+ * Create a PDF Secure activity from a drag-and-dropped PDF.
+ *
+ * The course module already exists when Moodle calls this handler. The instance
+ * callback intentionally does not save draft files, so the file is stored here.
+ *
+ * @param stdClass $uploadinfo Upload details.
+ * @return int New activity instance id.
+ */
+function pdfsecure_dndupload_handle($uploadinfo) {
+    global $USER;
+
+    $draftcontext = context_user::instance($USER->id);
+    $draftfiles = get_file_storage()->get_area_files(
+        $draftcontext->id,
+        'user',
+        'draft',
+        $uploadinfo->draftitemid,
+        'filepath, filename',
+        false
+    );
+    $ispdf = false;
+    foreach ($draftfiles as $file) {
+        if ($file->get_mimetype() === 'application/pdf'
+                || strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION)) === 'pdf') {
+            $ispdf = true;
+            break;
+        }
+    }
+    if (!$ispdf) {
+        return 0;
+    }
+
+    $context = context_module::instance($uploadinfo->coursemodule);
+    file_save_draft_area_files(
+        $uploadinfo->draftitemid,
+        $context->id,
+        'mod_pdfsecure',
+        'content',
+        0,
+        ['subdirs' => 0, 'maxfiles' => 1]
+    );
+
+    $storedfiles = get_file_storage()->get_area_files($context->id, 'mod_pdfsecure', 'content', 0, 'sortorder', false);
+    $storedpdf = false;
+    foreach ($storedfiles as $file) {
+        if ($file->get_mimetype() === 'application/pdf'
+                || strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION)) === 'pdf') {
+            $storedpdf = true;
+            break;
+        }
+    }
+    if (!$storedpdf) {
+        get_file_storage()->delete_area_files($context->id, 'mod_pdfsecure', 'content', 0);
+        return 0;
+    }
+
+    $data = new stdClass();
+    $data->course = $uploadinfo->course->id;
+    $data->name = $uploadinfo->displayname;
+    $data->intro = '';
+    $data->introformat = FORMAT_HTML;
+    $data->coursemodule = $uploadinfo->coursemodule;
+    $data->completionreadall = 0;
+
+    try {
+        return pdfsecure_add_instance($data, null);
+    } catch (Throwable $e) {
+        get_file_storage()->delete_area_files($context->id, 'mod_pdfsecure', 'content', 0);
+        throw $e;
+    }
+}
+
+/**
  * Serves protected PDF content through the module file endpoint.
  *
  * @param stdClass $course Course record.
