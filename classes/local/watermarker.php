@@ -24,10 +24,11 @@ namespace mod_pdfsecure\local;
  * carries the identity of the account that fetched it.
  *
  * The original upload is never modified and never served - see
- * pdfsecure_pluginfile(). The stamped copy is produced on FIRST VIEW, per user,
- * and cached. It cannot be produced at upload time, because at upload time there
- * is no reader to name yet; that is also why newly uploaded files are covered
- * automatically, with no batch step.
+ * pdfsecure_pluginfile(). The stamped copy is produced on EVERY VIEW and not stored.
+ * It cannot be produced at upload time, because at upload time there is no reader
+ * to name yet; that is also why newly uploaded files are covered automatically,
+ * with no batch step. A PDF the free parser refuses is stamped from a rewritten
+ * copy - see normalized_copy().
  *
  * @package    mod_pdfsecure
  * @copyright  2026 Angel Aligner
@@ -169,8 +170,8 @@ class watermarker {
         // the path from dirroot yields public/public/... and fails.
         require_once(__DIR__ . '/../../vendor/autoload.php');
 
-        // FPDI cannot read encrypted PDFs and drops annotations, links and form
-        // fields on import - acceptable for reading material. Anything it refuses
+        // FPDI drops annotations, links and form fields on import - acceptable for
+        // reading material. Anything it still refuses after the Ghostscript rewrite
         // raises, and the caller fails closed rather than serving the original.
         $tmp = make_request_directory() . '/source.pdf';
         $source->copy_content_to($tmp);

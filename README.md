@@ -103,9 +103,20 @@ order to obtain a copy stamped with a colleague's name.
 
 FPDI and FPDF are bundled in `vendor/` — no Composer step is needed on the server.
 
-**Known limitation of the PDF engine:** FPDI cannot read encrypted PDFs, and
-importing drops annotations, links, bookmarks and form fields. For reading material
-this is usually fine; if your PDFs are interactive forms, test before rolling out.
+- Ghostscript, at the path in *Site administration › Server › System paths* (`pathtogs`), to stamp PDFs the
+  bundled parser cannot read
+
+**PDFs FPDI cannot read (v2.3.1).** The free FPDI parser refuses PDF 1.5+ cross-reference streams, which most
+current exporters write. Such a file is rewritten once with Ghostscript into the `normalized` file area, which has
+no URL, and every reader's copy is stamped from it. The upload stays untouched in `content`. To diagnose a PDF that
+gives a 404, call `watermarker::render_for()` from the CLI and read the exception.
+
+**What is still refused:** a password-protected or damaged PDF, a file over the size limit, and any file needing a
+rewrite when Ghostscript is missing. The activity form and drag-and-drop refuse these with a message. A file that
+reaches the viewer anyway fails closed: it is never served unstamped.
+
+**Known limitation of the PDF engine:** importing drops annotations, links, bookmarks and form fields. For reading
+material this is usually fine; if your PDFs are interactive forms, test before rolling out.
 
 ---
 
