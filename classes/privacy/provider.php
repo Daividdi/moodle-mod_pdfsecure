@@ -55,7 +55,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'timemodified' => 'privacy:metadata:pdfsecure_progress:timemodified',
             'timecompleted' => 'privacy:metadata:pdfsecure_progress:timecompleted',
         ], 'privacy:metadata:pdfsecure_progress');
-        $items->add_subsystem_link('core_files', 'privacy:metadata:watermarked');
+        $items->add_subsystem_link('core_files', [], 'privacy:metadata:watermarked');
 
         return $items;
     }

@@ -100,6 +100,8 @@ function pdfsecure_update_instance($pdfsecure, $mform = null) {
             0,
             ['subdirs' => 0, 'maxfiles' => 1]
         );
+        // Rebuilt on the next view if the new file needs it.
+        get_file_storage()->delete_area_files($context->id, 'mod_pdfsecure', \mod_pdfsecure\local\watermarker::NORMALIZED_AREA);
     }
     return true;
 }
@@ -261,6 +263,10 @@ function pdfsecure_dndupload_handle($uploadinfo) {
         }
     }
     if (!$ispdf) {
+        return 0;
+    }
+    // Returning 0 makes Moodle report the failed upload, instead of an activity no one can read.
+    if (pdfsecure_stamp_mode() !== 'off' && !\mod_pdfsecure\local\watermarker::can_stamp($file)) {
         return 0;
     }
 

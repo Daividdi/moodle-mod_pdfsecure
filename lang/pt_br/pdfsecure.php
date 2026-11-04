@@ -53,3 +53,5 @@ $string['privacy:metadata:watermarked'] = 'O PDF Secure pode guardar derivados d
 $string['resetprogress'] = 'Apagar o progresso de leitura';
 $string['pdfsecure:addinstance'] = 'Adicionar uma atividade PDF Secure';
 $string['pdfsecure:view'] = 'Ver atividades PDF Secure';
+$string['errorcannotstamp'] = "Este PDF não pode ser usado: o site não conseguiu lê-lo para aplicar a marca do leitor. Ele pode estar protegido por senha ou danificado. Tire a proteção ou exporte de novo e envie outra vez.";
+$string['errortoobigtostamp'] = "Este PDF é maior do que o tamanho que o site consegue marcar para os leitores. Envie um arquivo menor ou peça a um administrador para aumentar o limite.";

@@ -48,6 +48,31 @@ class mod_pdfsecure_mod_form extends moodleform_mod {
     }
 
     /**
+     * Refuses a PDF that could never reach a reader, instead of saving an empty activity.
+     *
+     * @param array $data Form data.
+     * @param array $files Uploaded files.
+     * @return array Errors by element name.
+     */
+    public function validation($data, $files) {
+        global $USER;
+        $errors = parent::validation($data, $files);
+        if (pdfsecure_stamp_mode() === 'off' || empty($data['pdf_file'])) {
+            return $errors;
+        }
+        $draft = get_file_storage()->get_area_files(context_user::instance($USER->id)->id, 'user', 'draft',
+            $data['pdf_file'], 'id', false);
+        foreach ($draft as $file) {
+            if (\mod_pdfsecure\local\watermarker::too_big($file)) {
+                $errors['pdf_file'] = get_string('errortoobigtostamp', 'mod_pdfsecure');
+            } else if (!\mod_pdfsecure\local\watermarker::can_stamp($file)) {
+                $errors['pdf_file'] = get_string('errorcannotstamp', 'mod_pdfsecure');
+            }
+        }
+        return $errors;
+    }
+
+    /**
      * Defines the PDF Secure activity settings form.
      */
     public function definition() {

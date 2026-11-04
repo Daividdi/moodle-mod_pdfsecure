@@ -87,3 +87,5 @@ $string['privacy:metadata:watermarked'] = 'PDF Secure can store per-user waterma
 $string['resetprogress'] = 'Delete reading progress';
 $string['pdfsecure:addinstance'] = 'Add a new PDF Secure activity';
 $string['pdfsecure:view'] = 'View PDF Secure activities';
+$string['errorcannotstamp'] = "This PDF cannot be used: the site could not read it to apply the reader's watermark. It may be password-protected or damaged. Remove the protection or export it again, then upload it.";
+$string['errortoobigtostamp'] = "This PDF is larger than the size the site can watermark for readers. Upload a smaller file, or ask an administrator to raise the limit.";
