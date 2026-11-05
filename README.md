@@ -115,6 +115,11 @@ gives a 404, call `watermarker::render_for()` from the CLI and read the exceptio
 rewrite when Ghostscript is missing. The activity form and drag-and-drop refuse these with a message. A file that
 reaches the viewer anyway fails closed: it is never served unstamped.
 
+**The viewer (v2.3.2).** `pdfjs-drm` is PDF.js 3.11.174, older than the fix for CVE-2024-4367. Two local changes in
+`web/viewer.js` contain it: `isEvalSupported` is off, so glyphs are drawn without compiled code, and the `file`
+parameter accepts only this plugin's `stamped` URLs, so the page cannot be pointed at a PDF from elsewhere on the site.
+Keep both if the viewer is ever replaced.
+
 **Known limitation of the PDF engine:** importing drops annotations, links, bookmarks and form fields. For reading
 material this is usually fine; if your PDFs are interactive forms, test before rolling out.
 
@@ -230,10 +235,16 @@ so scrolling straight to the end reads nothing in between. Progress is kept per 
 (`pdfsecure_progress`), backed up with user data and exported/deleted by the privacy
 API, as are the per-person stamped copies.
 
-What it does not do: the page total comes from the viewer, so someone forging the
-web service call by hand could claim a one-page document. For internal training that
-is an accepted limit; the gamification on top of it (local_escalada) rewards the
-completion like any other.
+What it does not do: prove the reading. Since v2.3.2 the server reads the page total
+from the stored PDF and refuses any other figure, so nobody can claim a one-page
+document. The pages seen still come from the browser, so someone forging the web
+service call by hand can report every page: the signal stays attested by the client.
+For internal training that is an accepted limit; the gamification on top of it
+(local_escalada) rewards the completion like any other.
+
+If the server cannot read a PDF at all (possible only with stamping off, and a file
+needing a rewrite while Ghostscript is missing), it falls back to the viewer's total for
+that file. Readers can still complete it, and the forged-total check does not apply.
 
 Switch it on per activity under *Completion conditions → Read to the end*, or for many
 activities at once with Moodle's bulk edit of activity completion.

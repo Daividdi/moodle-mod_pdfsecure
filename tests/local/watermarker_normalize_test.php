@@ -88,6 +88,25 @@ final class watermarker_normalize_test extends \advanced_testcase {
     }
 
     /**
+     * The page count of a cross-reference stream PDF comes through the rewritten copy, and is null without Ghostscript.
+     */
+    public function test_page_count_reads_xref_stream_pdf(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $pathtogs = $CFG->pathtogs ?? '';
+        $CFG->pathtogs = '';
+        [$unreadable] = $this->stored_source($this->xref_stream_pdf() . '% no rewrite');
+        $this->assertNull(watermarker::page_count($unreadable));
+
+        $CFG->pathtogs = is_executable($pathtogs) ? $pathtogs : '/usr/bin/gs';
+        if (!is_executable($CFG->pathtogs)) {
+            $this->markTestSkipped('Ghostscript not available');
+        }
+        [$source] = $this->stored_source($this->xref_stream_pdf());
+        $this->assertSame(1, watermarker::page_count($source));
+    }
+
+    /**
      * Without Ghostscript the render still fails closed and the form check says so.
      */
     public function test_without_ghostscript_fails_closed(): void {

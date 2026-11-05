@@ -89,3 +89,6 @@ $string['pdfsecure:addinstance'] = 'Add a new PDF Secure activity';
 $string['pdfsecure:view'] = 'View PDF Secure activities';
 $string['errorcannotstamp'] = "This PDF cannot be used: the site could not read it to apply the reader's watermark. It may be password-protected or damaged. Remove the protection or export it again, then upload it.";
 $string['errortoobigtostamp'] = "This PDF is larger than the size the site can watermark for readers. Upload a smaller file, or ask an administrator to raise the limit.";
+$string['cachedef_pagecount'] = 'Page count cache for PDF Secure files';
+$string['errorpagesmismatch'] = 'The page total does not match this PDF. Reload the page.';
+$string['errorpagesnodocument'] = 'This activity has no document to read.';
