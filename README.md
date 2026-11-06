@@ -254,6 +254,17 @@ types, and encrypted entries are rejected. It is limited to 50 entries and 500 M
 of total uncompressed data. PDFs that cannot be stamped or exceed the site's stamp
 size limit are skipped; an archive with no valid PDFs fails.
 
+### Editing, deleting and ordering files (v2.4.1)
+
+**Edit settings** shows the PDFs already in the activity, so a teacher can delete,
+rename or add files there. The list learners see is sorted by file name in natural
+order ("2 ..." before "10 ..."): to choose the order, number the names (rename a
+file by clicking it in the file box). Renaming a file starts its reading progress
+again, because progress is kept per file name.
+
+The file **Author** field is hidden in this form and cleared on save: Moodle fills
+it with the uploader's name, which is not the article's author.
+
 ## Completion: reading to the end (v2.2.0; multi-file modes in v2.4.0)
 
 An activity can complete on view, or only when the person has **read the document**:
