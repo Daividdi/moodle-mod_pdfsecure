@@ -157,9 +157,13 @@ default, so an upgrade keeps the existing behavior until an administrator enable
 
 With the setting on, Moodle rejects a PDF in a File or Folder activity form before
 the activity is saved and offers PDF Secure when a `.pdf` is dragged onto a course.
+Since v2.4.0 the form also rejects a `.zip` that contains a PDF (or that cannot be
+read), because a zip would hand learners the same plain files in one download.
 If another path creates or updates a File or Folder containing a PDF — such as
 drag-and-drop chosen as File, Folder editing, restore, import or a web service — an
-event queues conversion, and an hourly sweep catches anything an event missed. A
+event hides that activity at once (v2.4.0) and queues conversion, and an hourly
+sweep catches anything an event missed. Hiding first means a plain PDF is never
+visible to learners while it waits for the conversion task. A
 PDFProtect activity is also converted when that module is installed. A
 File becomes one PDF Secure activity immediately after it, with its visibility,
 availability and completion carried over. Each PDF in a Folder gets
@@ -233,6 +237,16 @@ One PDF Secure activity can hold several PDFs. With one document, opening the
 activity still opens the protected viewer directly. With several, the activity
 shows each filename, pages read out of the total, and whether that PDF is read.
 Each file opens in the same protected viewer and has separate reading progress.
+
+**To group several articles (the "folder" use case),** don't use a Folder: add one
+PDF Secure activity and put all the PDFs in its file box, or drag a ZIP of them onto
+the course. Dragging several loose PDFs at once still creates one activity per file;
+that is how Moodle core handles a multi-file drop.
+
+Reading progress is stored per file, keyed by file name inside the activity
+(`pdfsecure_progress.filekey`), not by stored-file id, so it survives backup and
+restore. The v2.4.0 upgrade fills the key for existing progress from the single PDF
+each activity had, so nobody loses what they already read.
 
 Dragging a ZIP onto a course creates one PDF Secure activity named after the ZIP.
 The archive must contain only top-level PDF files; nested folders, other file
