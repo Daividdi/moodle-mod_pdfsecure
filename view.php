@@ -191,7 +191,7 @@ if ($selectedfile) {
 } else if (count($pdfs) > 1) {
     global $USER;
     echo html_writer::tag('p', get_string('selectdocument', 'mod_pdfsecure'));
-    echo html_writer::start_tag('ul', ['class' => 'pdfsecure-document-list']);
+    echo html_writer::start_tag('div', ['class' => 'pdfsecure-document-list list-group mb-3']);
     foreach ($pdfs as $filename => $document) {
         $progress = $DB->get_record('pdfsecure_progress', [
             'pdfsecureid' => $pdfsecure->id,
@@ -207,17 +207,22 @@ if ($selectedfile) {
             $total = (int)$progress->pages;
         }
         $pages = (object)['read' => $seen, 'total' => $total === null ? '?' : $total];
-        $status = $progress && !empty($progress->timecompleted)
+        $done = $progress && !empty($progress->timecompleted);
+        $status = $done
             ? get_string('readstatecomplete', 'mod_pdfsecure')
             : get_string('readstateincomplete', 'mod_pdfsecure');
         $link = new moodle_url('/mod/pdfsecure/view.php', ['id' => $cm->id, 'file' => $filename]);
-        $row = html_writer::tag('span', format_string($filename), ['class' => 'pdfsecure-document-name']);
-        $row .= html_writer::tag('span', get_string('pagesread', 'mod_pdfsecure', $pages),
-            ['class' => 'pdfsecure-document-pages']);
-        $row .= html_writer::tag('span', $status, ['class' => 'pdfsecure-document-state']);
-        echo html_writer::tag('li', html_writer::link($link, $row), ['class' => 'pdfsecure-document-item']);
+        $name = html_writer::tag('span', $OUTPUT->pix_icon('f/pdf', '') . ' ' . format_string($filename),
+            ['class' => 'pdfsecure-document-name fw-semibold']);
+        $meta = html_writer::tag('span', get_string('pagesread', 'mod_pdfsecure', $pages),
+            ['class' => 'pdfsecure-document-pages text-muted small me-2']);
+        $meta .= html_writer::tag('span', $status,
+            ['class' => 'pdfsecure-document-state badge ' . ($done ? 'bg-success' : 'bg-secondary')]);
+        $row = $name . html_writer::tag('span', $meta, ['class' => 'text-nowrap']);
+        echo html_writer::link($link, $row, ['class' => 'pdfsecure-document-item list-group-item list-group-item-action'
+            . ' d-flex flex-wrap justify-content-between align-items-center gap-2']);
     }
-    echo html_writer::end_tag('ul');
+    echo html_writer::end_tag('div');
 } else {
     echo $OUTPUT->notification(get_string('errorpagesnodocument', 'mod_pdfsecure'), 'notifyproblem');
 }

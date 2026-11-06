@@ -223,6 +223,18 @@ function pdfsecure_coursemodule_validation($mform, $data) {
                 || strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION)) === 'pdf') {
             return ['files' => get_string('onlysecurevalidation', 'mod_pdfsecure')];
         }
+        // A zip of PDFs would hand students the same plain files in one download.
+        if (strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION)) === 'zip') {
+            $entries = $file->list_files(get_file_packer('application/zip'));
+            if ($entries === false) {
+                return ['files' => get_string('onlysecurevalidation', 'mod_pdfsecure')];
+            }
+            foreach ($entries as $entry) {
+                if (strtolower(pathinfo((string)$entry->pathname, PATHINFO_EXTENSION)) === 'pdf') {
+                    return ['files' => get_string('onlysecurevalidation', 'mod_pdfsecure')];
+                }
+            }
+        }
     }
 
     return [];

@@ -40,7 +40,7 @@ final class progress_migration {
                JOIN {course_modules} cm ON cm.instance = p.pdfsecureid
                JOIN {modules} m ON m.id = cm.module AND m.name = :modname
               WHERE $conditions
-              ORDER BY progress.id",
+              ORDER BY p.id",
             $params
         );
         foreach ($rows as $row) {
