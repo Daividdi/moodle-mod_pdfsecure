@@ -40,4 +40,15 @@ final class viewer_hardening_test extends \basic_testcase {
         $this->assertStringContainsString('mod_pdfsecure\\/stamped', $viewer);
         $this->assertMatchesRegularExpression('/!isPdfSecureDocument\(new URL\(file,/', $viewer);
     }
+
+    /**
+     * The activity viewer resolves the requested key against its own PDF allow-list.
+     */
+    public function test_view_resolves_file_parameter_against_activity_allowlist(): void {
+        $view = file_get_contents(__DIR__ . '/../view.php');
+        $this->assertStringContainsString(
+            'content_files::resolve($context, (string)$filekey)',
+            $view
+        );
+    }
 }

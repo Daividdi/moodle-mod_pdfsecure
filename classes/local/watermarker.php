@@ -136,7 +136,7 @@ class watermarker {
     }
 
     /**
-     * Deletes this user's derivatives that no longer match the current key.
+     * Deletes this user's stale derivative for this source file only.
      *
      * @param \stored_file $source
      * @param int $userid
@@ -146,8 +146,10 @@ class watermarker {
         $fs = get_file_storage();
         $old = $fs->get_area_files($source->get_contextid(), 'mod_pdfsecure', self::AREA,
             $userid, 'id', false);
+        $sourcesuffix = '-' . $source->get_contenthash() . '.pdf';
         foreach ($old as $f) {
-            if ($f->get_filename() !== $keep) {
+            $filename = $f->get_filename();
+            if ($filename !== $keep && substr($filename, -strlen($sourcesuffix)) === $sourcesuffix) {
                 $f->delete();
             }
         }
@@ -321,8 +323,6 @@ class watermarker {
             return null;
         }
 
-        // The activity's file was replaced, so a copy of the previous one is garbage.
-        $fs->delete_area_files($source->get_contextid(), 'mod_pdfsecure', self::NORMALIZED_AREA, 0);
         try {
             return $fs->create_file_from_pathname([
                 'contextid' => $source->get_contextid(),

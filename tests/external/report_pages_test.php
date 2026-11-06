@@ -64,17 +64,19 @@ final class report_pages_test extends \advanced_testcase {
      * @param int $cmid Course module ID.
      * @param string $content File content.
      */
-    private function store_document(int $cmid, string $content): void {
+    private function store_document(int $cmid, string $content, string $filename = 'doc.pdf', bool $replace = true): void {
         $contextid = \context_module::instance($cmid)->id;
         $fs = get_file_storage();
-        $fs->delete_area_files($contextid, 'mod_pdfsecure', 'content');
+        if ($replace) {
+            $fs->delete_area_files($contextid, 'mod_pdfsecure', 'content');
+        }
         $fs->create_file_from_string([
             'contextid' => $contextid,
             'component' => 'mod_pdfsecure',
             'filearea' => 'content',
             'itemid' => 0,
             'filepath' => '/',
-            'filename' => 'doc.pdf',
+            'filename' => $filename,
         ], $content);
     }
 
@@ -84,14 +86,14 @@ final class report_pages_test extends \advanced_testcase {
      * @param int $pages Pages in the activity's document; 0 leaves it without one.
      * @return array{course: \stdClass, activity: \stdClass, cmid: int, user: \stdClass}
      */
-    private function create_activity_and_reader(int $pages): array {
+    private function create_activity_and_reader(int $pages, int $completionmode = 1): array {
         global $CFG;
         require_once($CFG->libdir . '/completionlib.php');
         $course = $this->getDataGenerator()->create_course(['enablecompletion' => COMPLETION_ENABLED]);
         $activity = $this->getDataGenerator()->create_module('pdfsecure', [
             'course' => $course->id,
             'completion' => COMPLETION_TRACKING_AUTOMATIC,
-            'completionreadall' => 1,
+            'completionreadall' => $completionmode,
         ]);
         $cm = get_coursemodule_from_instance('pdfsecure', $activity->id, $course->id);
         $user = $this->getDataGenerator()->create_user();
@@ -112,9 +114,9 @@ final class report_pages_test extends \advanced_testcase {
      * @param array $seen Newly seen page numbers.
      * @return array Result from the external function.
      */
-    private function report(int $cmid, \stdClass $user, int $pages, array $seen): array {
+    private function report(int $cmid, \stdClass $user, int $pages, array $seen, string $file = 'doc.pdf'): array {
         $this->setUser($user);
-        return report_pages::execute($cmid, $pages, $seen);
+        return report_pages::execute($cmid, $pages, $seen, $file);
     }
 
     /**
@@ -217,6 +219,7 @@ final class report_pages_test extends \advanced_testcase {
         $DB->insert_record('pdfsecure_progress', (object)[
             'pdfsecureid' => $fixture['activity']->id,
             'userid' => $fixture['user']->id,
+            'filekey' => 'doc.pdf',
             'pages' => 10,
             'seen' => implode(',', range(1, 9)),
             'timemodified' => time(),
@@ -275,6 +278,7 @@ final class report_pages_test extends \advanced_testcase {
         $DB->insert_record('pdfsecure_progress', (object)[
             'pdfsecureid' => $fixture['activity']->id,
             'userid' => $otheruser->id,
+            'filekey' => 'doc.pdf',
             'pages' => 20,
             'seen' => '4,8',
             'timemodified' => time(),
@@ -289,5 +293,67 @@ final class report_pages_test extends \advanced_testcase {
         ], '*', MUST_EXIST);
         $this->assertSame('4,8', $otherprogress->seen);
         $this->assertNull($otherprogress->timecompleted);
+    }
+
+    /**
+     * A viewer cannot submit progress for a PDF outside this activity.
+     */
+    public function test_report_pages_rejects_file_outside_activity_allowlist(): void {
+        $this->resetAfterTest();
+        $fixture = $this->create_activity_and_reader(1);
+
+        try {
+            $this->report($fixture['cmid'], $fixture['user'], 1, [1], 'another-course.pdf');
+            $this->fail('Progress for a PDF outside this activity was accepted');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('errorfileinvalid', $e->errorcode);
+        }
+    }
+
+    /**
+     * Completion mode one requires a completed row for every PDF in the activity.
+     */
+    public function test_completion_mode_one_requires_both_files(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $fixture = $this->create_activity_and_reader(1, 1);
+        $this->store_document($fixture['cmid'], $this->pdf(1), 'second.pdf', false);
+
+        $first = $this->report($fixture['cmid'], $fixture['user'], 1, [1], 'doc.pdf');
+        $this->assertTrue($first['complete']);
+        $this->assertFalse($DB->record_exists('course_modules_completion', [
+            'coursemoduleid' => $fixture['cmid'],
+            'userid' => $fixture['user']->id,
+            'completionstate' => COMPLETION_COMPLETE,
+        ]));
+
+        $second = $this->report($fixture['cmid'], $fixture['user'], 1, [1], 'second.pdf');
+        $this->assertTrue($second['complete']);
+        $this->assertTrue($DB->record_exists('course_modules_completion', [
+            'coursemoduleid' => $fixture['cmid'],
+            'userid' => $fixture['user']->id,
+            'completionstate' => COMPLETION_COMPLETE,
+        ]));
+    }
+
+    /**
+     * Completion mode two is met by reading either one of two PDFs.
+     */
+    public function test_completion_mode_two_accepts_either_file(): void {
+        global $DB, $CFG;
+        require_once($CFG->libdir . '/completionlib.php');
+
+        $this->resetAfterTest();
+        $fixture = $this->create_activity_and_reader(1, 2);
+        $this->store_document($fixture['cmid'], $this->pdf(1), 'second.pdf', false);
+
+        $result = $this->report($fixture['cmid'], $fixture['user'], 1, [1], 'second.pdf');
+        $this->assertTrue($result['complete']);
+        $this->assertTrue($DB->record_exists('course_modules_completion', [
+            'coursemoduleid' => $fixture['cmid'],
+            'userid' => $fixture['user']->id,
+            'completionstate' => COMPLETION_COMPLETE,
+        ]));
     }
 }
