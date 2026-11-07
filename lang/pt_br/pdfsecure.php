@@ -78,3 +78,4 @@ $string['errorzipencrypted'] = 'Arquivos criptografados dentro do ZIP não são 
 $string['errorzipsize'] = 'Este ZIP excede o limite de 50 itens ou 500 MB descompactados.';
 $string['errorzipnovalidpdfs'] = 'O ZIP não contém nenhum PDF que possa ser adicionado ao PDF Secure.';
 $string['cachedef_viewtokens'] = 'Tokens temporários do visualizador de PDF';
+$string['fullscreen'] = 'Tela cheia';

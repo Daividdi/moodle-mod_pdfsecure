@@ -57,7 +57,7 @@ if ($selectedfile && !empty($pdfsecure->completionreadall)) {
 
 echo $OUTPUT->header();
 
-echo "<h3>" . format_string($pdfsecure->name) . "</h3>";
+// The activity header already shows the name (Moodle 4+), so no second heading here.
 
 if ($selectedfile) {
     // Points at the virtual `stamped` area - the only addressable area this plugin
@@ -91,8 +91,20 @@ if ($selectedfile) {
         }
     </style>
 
-    <div style="position: relative; width: 100%; height: 800px; border: 1px solid #ccc;
-                margin-top: 20px; overflow: hidden; user-select: none;">
+    <style>
+        .pdfsecure-frame-wrap { position: relative; width: 100%; height: calc(100vh - 150px); min-height: 520px;
+            max-height: 1400px; border: 1px solid #ccc; border-radius: .375rem; margin-top: .75rem; overflow: hidden;
+            user-select: none; -webkit-user-select: none; background: #2a2a2e; scroll-margin-top: 90px; }
+        .pdfsecure-frame-wrap:fullscreen { height: 100vh; max-height: none; border: 0; border-radius: 0; }
+        .pdfsecure-toolbar { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .75rem; }
+        .pdfsecure-toolbar .btn { display: inline-flex; align-items: center; gap: .4rem; }
+    </style>
+    <div class="pdfsecure-toolbar">
+        <button type="button" class="btn btn-secondary" id="pdfsecure-fullscreen">
+            <span aria-hidden="true">&#x26F6;</span> <?php echo get_string('fullscreen', 'mod_pdfsecure'); ?>
+        </button>
+    </div>
+    <div class="pdfsecure-frame-wrap" id="pdfsecure-frame-wrap">
         
         <iframe id="pdf-iframe" src="<?php echo s($viewerurl); ?>#toolbar=0"
                 width="100%" height="100%"
@@ -121,6 +133,29 @@ if ($selectedfile) {
             e.preventDefault();
         }
     });
+
+    // Tela cheia do bloco do visualizador (o modo apresentação do PDF.js continua escondido).
+    (function() {
+        var wrap = document.getElementById('pdfsecure-frame-wrap');
+        var button = document.getElementById('pdfsecure-fullscreen');
+        if (!wrap || !button || !wrap.requestFullscreen) {
+            if (button) { button.hidden = true; }
+            return;
+        }
+        button.addEventListener('click', function() {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                wrap.requestFullscreen().catch(function() {});
+            }
+        });
+        document.addEventListener('fullscreenchange', function() {
+            var app = document.getElementById('pdf-iframe').contentWindow.PDFViewerApplication;
+            if (app && app.pdfViewer) {
+                setTimeout(function() { app.pdfViewer.currentScaleValue = 'page-width'; }, 150);
+            }
+        });
+    })();
 
     // 3. CORTINA DE FUMAÇA INTELIGENTE
     var iframeElement = document.getElementById('pdf-iframe');
@@ -151,7 +186,9 @@ if ($selectedfile) {
                         /* CORREÇÃO 2: Destruição dos botões de Tela Cheia (#presentationMode, #secondaryPresentationMode) */
                         #print, #download, #secondaryPrint, #secondaryDownload, #openFile,
                         #secondaryOpenFile, .print, .download, #presentationMode,
-                        #secondaryPresentationMode, .presentationMode { display: none !important; }
+                        #secondaryPresentationMode, .presentationMode,
+                        #editorModeButtons, #editorModeSeparator, #editorFreeText, #editorInk, #editorStamp,
+                        #editorHighlight, #cursorTextTool { display: none !important; }
                         body, .textLayer {
                             user-select: none !important;
                             -webkit-user-select: none !important;
