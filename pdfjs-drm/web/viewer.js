@@ -1652,7 +1652,7 @@ exports.PDFViewerApplication = PDFViewerApplication;
     } else {
       return false;
     }
-    return /^\/\d+\/mod_pdfsecure\/stamped\/0\/[^/\\]+$/.test(path) && !/%2f|%5c|%2e/i.test(path);
+    return /^\/\d+\/mod_(?:pdfsecure|slidesecure)\/stamped\/0\/[^/\\]+$/.test(path) && !/%2f|%5c|%2e/i.test(path);
   };
   var validateFileURL = function (file) {
     if (!file) {
