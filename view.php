@@ -85,6 +85,44 @@ if ($selectedfile) {
     <div class="pdfsecure-frame-wrap" id="pdfsecure-frame-wrap">
         <div class="pdfsecure-toolbar" id="pdfsecure-toolbar" role="toolbar"
                 aria-label="<?php echo s(get_string('toolbarlabel', 'mod_pdfsecure')); ?>">
+            <button type="button" class="btn btn-sm btn-light" id="pdfsecure-thumbs" aria-pressed="false"
+                    aria-label="<?php echo s(get_string('thumbnails', 'mod_pdfsecure')); ?>"
+                    title="<?php echo s(get_string('thumbnails', 'mod_pdfsecure')); ?>">
+                <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 4h6v7H4zM4 14h6v6H4zM14 4h6v16h-6z"/></svg>
+                <span class="pdfsecure-action-label"><?php echo get_string('thumbnails', 'mod_pdfsecure'); ?></span>
+            </button>
+            <div class="pdfsecure-nav">
+                <button type="button" class="btn btn-sm btn-light" id="pdfsecure-prev" disabled
+                        aria-label="<?php echo s(get_string('previouspage', 'mod_pdfsecure')); ?>"
+                        title="<?php echo s(get_string('previouspage', 'mod_pdfsecure')); ?>">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
+                    <span class="pdfsecure-action-label"><?php echo get_string('previouspage', 'mod_pdfsecure'); ?></span>
+                </button>
+                <output class="pdfsecure-counter" id="pdfsecure-counter" aria-live="polite">&nbsp;</output>
+                <button type="button" class="btn btn-sm btn-light" id="pdfsecure-next"
+                        aria-label="<?php echo s(get_string('nextpage', 'mod_pdfsecure')); ?>"
+                        title="<?php echo s(get_string('nextpage', 'mod_pdfsecure')); ?>">
+                    <span class="pdfsecure-action-label"><?php echo get_string('nextpage', 'mod_pdfsecure'); ?></span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M9 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+            <div class="pdfsecure-zoom">
+                <button type="button" class="btn btn-sm btn-light" id="pdfsecure-zoomout"
+                        aria-label="<?php echo s(get_string('zoomout', 'mod_pdfsecure')); ?>"
+                        title="<?php echo s(get_string('zoomout', 'mod_pdfsecure')); ?>">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M5 12h14"/></svg>
+                </button>
+                <button type="button" class="btn btn-sm btn-light" id="pdfsecure-fit"
+                        aria-label="<?php echo s(get_string('fitwidth', 'mod_pdfsecure')); ?>"
+                        title="<?php echo s(get_string('fitwidth', 'mod_pdfsecure')); ?>">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>
+                </button>
+                <button type="button" class="btn btn-sm btn-light" id="pdfsecure-zoomin"
+                        aria-label="<?php echo s(get_string('zoomin', 'mod_pdfsecure')); ?>"
+                        title="<?php echo s(get_string('zoomin', 'mod_pdfsecure')); ?>">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M5 12h14M12 5v14"/></svg>
+                </button>
+            </div>
             <button type="button" class="btn btn-sm btn-light" id="pdfsecure-fullscreen"
                     aria-label="<?php echo s(get_string('fullscreen', 'mod_pdfsecure')); ?>"
                     title="<?php echo s(get_string('fullscreen', 'mod_pdfsecure')); ?>"
@@ -287,7 +325,8 @@ if ($selectedfile) {
                 }
                 var style = innerDoc.createElement('style');
                 style.id = 'pdfsecure-hardening';
-                style.textContent = 'body, .textLayer { user-select:none !important; -webkit-user-select:none !important; cursor:default !important; }'
+                style.textContent = '#toolbarContainer, #viewAttachments, #viewLayers, #attachmentsView, #layersView { display:none !important; } #viewerContainer, #sidebarContainer { top:0 !important; } '
+                    + 'body, .textLayer { user-select:none !important; -webkit-user-select:none !important; cursor:default !important; }'
                     + '@media print { html, body { display:none !important; visibility:hidden !important; } }';
                 innerDoc.head.appendChild(style);
                 innerDoc.documentElement.dataset.pdfsecureHardened = 'true';
@@ -350,6 +389,54 @@ if ($selectedfile) {
             }, 250);
             window.setTimeout(function() { window.clearInterval(fallbackInterval); }, 30000);
         }
+    })();
+    // Barra própria (igual à da apresentação): miniaturas, página anterior/próxima, contador e zoom.
+    (function() {
+        var iframe = document.getElementById('pdf-iframe');
+        var q = function(id) { return document.getElementById(id); };
+        var thumbs = q('pdfsecure-thumbs'), prev = q('pdfsecure-prev'), next = q('pdfsecure-next'),
+            counter = q('pdfsecure-counter');
+        var label = <?php echo json_encode(get_string('pagecounter', 'mod_pdfsecure')); ?>;
+        function app() {
+            try { return iframe.contentWindow.PDFViewerApplication || null; } catch (e) { return null; }
+        }
+        function sync() {
+            var a = app();
+            if (!a || !a.pdfDocument) { return; }
+            var n = a.page, total = a.pagesCount;
+            counter.textContent = label.replace('{n}', n).replace('{total}', total);
+            prev.disabled = n <= 1;
+            next.disabled = n >= total;
+            var open = !!(a.pdfSidebar && a.pdfSidebar.isOpen);
+            thumbs.setAttribute('aria-pressed', open ? 'true' : 'false');
+        }
+        function hook() {
+            var a = app();
+            if (!a || !a.initializedPromise) { return setTimeout(hook, 200); }
+            a.initializedPromise.then(function() {
+                a.eventBus.on('pagechanging', sync);
+                a.eventBus.on('pagesinit', function() {
+                    if (window.innerWidth >= 992 && a.pdfSidebar && !a.pdfSidebar.isOpen) { a.pdfSidebar.open(); }
+                    sync();
+                });
+                a.eventBus.on('sidebarviewchanged', sync);
+                var openWide = function() {
+                    if (window.innerWidth >= 992 && a.pdfSidebar && !a.pdfSidebar.isOpen && a.pdfDocument) {
+                        a.pdfSidebar.open();
+                    }
+                    sync();
+                };
+                if (a.pdfDocument) { openWide(); } else { a.eventBus.on('documentloaded', openWide); }
+                sync();
+            });
+        }
+        hook();
+        prev.addEventListener('click', function() { var a = app(); if (a) { a.page = Math.max(1, a.page - 1); } });
+        next.addEventListener('click', function() { var a = app(); if (a) { a.page = Math.min(a.pagesCount, a.page + 1); } });
+        thumbs.addEventListener('click', function() { var a = app(); if (a && a.pdfSidebar) { a.pdfSidebar.toggle(); setTimeout(sync, 50); } });
+        q('pdfsecure-zoomin').addEventListener('click', function() { var a = app(); if (a) { a.zoomIn(); } });
+        q('pdfsecure-zoomout').addEventListener('click', function() { var a = app(); if (a) { a.zoomOut(); } });
+        q('pdfsecure-fit').addEventListener('click', function() { var a = app(); if (a) { a.pdfViewer.currentScaleValue = 'page-width'; } });
     })();
     </script>
     <?php
