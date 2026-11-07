@@ -131,3 +131,12 @@
 #page-mod-pdfsecure-view .page-header-headings h1, #page-mod-pdfsecure-view .page-context-header h1 { font-size: 1.25rem; }
 #page-mod-pdfsecure-view #page-header { margin-bottom: .25rem; padding-top: .25rem; padding-bottom: .25rem; }
 #page-mod-pdfsecure-view .pdfsecure-frame-wrap { margin-top: .25rem; }
+
+/* Theme top fade ends at the header here, so it no longer greys out the viewer bar. */
+body#page-mod-pdfsecure-view::before {
+    height: 4.1rem !important;
+    background: linear-gradient(to bottom, #f9f9fa 88%, rgba(249, 249, 250, 0)) !important;
+}
+body#page-mod-pdfsecure-view.theme-dark::before {
+    background: linear-gradient(to bottom, #14161d 88%, transparent) !important;
+}
