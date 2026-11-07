@@ -205,6 +205,13 @@ if ($selectedfile) {
             var header = nav ? Math.max(0, nav.getBoundingClientRect().bottom) : 0;
             wrap.style.scrollMarginTop = (header + 8) + 'px';
             wrap.style.height = Math.max(window.innerWidth < 576 ? 420 : 560, window.innerHeight - header - 24) + 'px';
+            if (!wrap.dataset.autoscrolled) {
+                // Open with the viewer filling the screen; title and completion stay one scroll up.
+                wrap.dataset.autoscrolled = '1';
+                if (window.scrollY < 10 && wrap.getBoundingClientRect().bottom > window.innerHeight) {
+                    window.scrollTo({top: wrap.getBoundingClientRect().top + window.scrollY - header - 8});
+                }
+            }
         }
 
         function syncFullscreen() {
@@ -329,7 +336,7 @@ if ($selectedfile) {
                 }
                 var style = innerDoc.createElement('style');
                 style.id = 'pdfsecure-hardening';
-                style.textContent = '#toolbarContainer, #viewAttachments, #viewLayers, #attachmentsView, #layersView { display:none !important; } #viewerContainer, #sidebarContainer { top:0 !important; } '
+                style.textContent = ':root { --sidebar-width: 170px !important; } #toolbarContainer, #viewAttachments, #viewLayers, #attachmentsView, #layersView { display:none !important; } #viewerContainer, #sidebarContainer { top:0 !important; } '
                     + 'body, .textLayer { user-select:none !important; -webkit-user-select:none !important; cursor:default !important; }'
                     + '@media print { html, body { display:none !important; visibility:hidden !important; } }';
                 innerDoc.head.appendChild(style);

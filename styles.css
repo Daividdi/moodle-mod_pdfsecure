@@ -115,3 +115,19 @@
 @media (max-width: 575.98px) {
     .pdfsecure-zoom { display: none; }
 }
+
+/* Compact mode: more room for the document (touch screens keep 44px targets). */
+.pdfsecure-toolbar { min-height: 0; padding: .2rem .35rem; gap: .3rem; }
+.pdfsecure-toolbar .btn { min-width: 30px; min-height: 30px; padding: .15rem .45rem; font-size: .8rem; gap: .3rem;
+    line-height: 1.2; }
+.pdfsecure-toolbar svg { width: .95rem; height: .95rem; }
+.pdfsecure-counter { font-size: .8rem; min-width: 7ch; }
+.pdfsecure-zoom .pdfsecure-action-label { display: none; }
+@media (max-width: 1199.98px) { .pdfsecure-toolbar .pdfsecure-action-label { display: none; } }
+@media (pointer: coarse) { .pdfsecure-toolbar .btn { min-width: 44px; min-height: 44px; } }
+/* Less Moodle chrome around the viewer on this page only. */
+#page-mod-pdfsecure-view #region-main { padding: .5rem .75rem; }
+#page-mod-pdfsecure-view .activity-header { margin-bottom: .5rem; padding: .35rem .5rem; }
+#page-mod-pdfsecure-view .page-header-headings h1, #page-mod-pdfsecure-view .page-context-header h1 { font-size: 1.25rem; }
+#page-mod-pdfsecure-view #page-header { margin-bottom: .25rem; padding-top: .25rem; padding-bottom: .25rem; }
+#page-mod-pdfsecure-view .pdfsecure-frame-wrap { margin-top: .25rem; }
