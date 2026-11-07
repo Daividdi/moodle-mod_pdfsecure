@@ -82,34 +82,29 @@ if ($selectedfile) {
     // Forçando o idioma para Inglês
     $viewerurl = $viewerpath . '?file=' . urlencode($fileurl->out(false)) . '&locale=en-US';
     ?>
-    <style>
-        @media print {
-            body, html, #page, #page-wrapper {
-                display: none !important;
-                visibility: hidden !important;
-            }
-        }
-    </style>
-
-    <style>
-        .pdfsecure-frame-wrap { position: relative; width: 100%; height: calc(100vh - 150px); min-height: 520px;
-            max-height: 1400px; border: 1px solid #ccc; border-radius: .375rem; margin-top: .75rem; overflow: hidden;
-            user-select: none; -webkit-user-select: none; background: #2a2a2e; scroll-margin-top: 90px; }
-        .pdfsecure-frame-wrap:fullscreen { height: 100vh; max-height: none; border: 0; border-radius: 0; }
-        .pdfsecure-toolbar { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .75rem; }
-        .pdfsecure-toolbar .btn { display: inline-flex; align-items: center; gap: .4rem; }
-    </style>
-    <div class="pdfsecure-toolbar">
-        <button type="button" class="btn btn-secondary" id="pdfsecure-fullscreen">
-            <span aria-hidden="true">&#x26F6;</span> <?php echo get_string('fullscreen', 'mod_pdfsecure'); ?>
-        </button>
-    </div>
     <div class="pdfsecure-frame-wrap" id="pdfsecure-frame-wrap">
-        
-        <iframe id="pdf-iframe" src="<?php echo s($viewerurl); ?>#toolbar=0"
-                width="100%" height="100%"
-                style="border:none; position: absolute; z-index: 1;"
-                onload="secureIframe()"></iframe>
+        <div class="pdfsecure-toolbar" id="pdfsecure-toolbar" role="toolbar"
+                aria-label="<?php echo s(get_string('toolbarlabel', 'mod_pdfsecure')); ?>">
+            <button type="button" class="btn btn-sm btn-light" id="pdfsecure-fullscreen"
+                    aria-label="<?php echo s(get_string('fullscreen', 'mod_pdfsecure')); ?>"
+                    title="<?php echo s(get_string('fullscreen', 'mod_pdfsecure')); ?>"
+                    data-enter-label="<?php echo s(get_string('fullscreen', 'mod_pdfsecure')); ?>"
+                    data-exit-label="<?php echo s(get_string('exitfullscreen', 'mod_pdfsecure')); ?>"
+                    aria-pressed="false">
+                <svg data-icon-enter aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                    <path d="M4 9V4h5M4 4l6 6m10 5v5h-5m5 0-6-6M15 4h5v5m0-5-6 6M9 20H4v-5m0 5 6-6"/>
+                </svg>
+                <svg data-icon-exit aria-hidden="true" viewBox="0 0 24 24" focusable="false" hidden>
+                    <path d="M9 4v5H4m0-5 6 6m5 10v-5h5m0 5-6-6m6-10h-5V4m5 0-6 6M4 20h5v-5m-5 5 6-6"/>
+                </svg>
+                <span class="pdfsecure-action-label"><?php echo get_string('fullscreen', 'mod_pdfsecure'); ?></span>
+            </button>
+        </div>
+        <div class="pdfsecure-stage" id="pdfsecure-stage" tabindex="0">
+            <iframe id="pdf-iframe" src="<?php echo s($viewerurl); ?>#toolbar=0"
+                    title="<?php echo s(format_string($pdfsecure->name)); ?>"
+                    width="100%" height="100%"></iframe>
+        </div>
         
         <?php
         // O overlay CSS de marca d'agua foi REMOVIDO em 2026-08-07.
@@ -123,107 +118,239 @@ if ($selectedfile) {
     </div>
 
     <script>
-    // 2. ESCUDO GLOBAL DO MOODLE
-    document.addEventListener('contextmenu', function(event) {
-        event.preventDefault();
-    });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'P' || e.key === 'S')) {
-            e.preventDefault();
-        }
-    });
-
-    // Tela cheia do bloco do visualizador (o modo apresentação do PDF.js continua escondido).
     (function() {
-        var wrap = document.getElementById('pdfsecure-frame-wrap');
-        var button = document.getElementById('pdfsecure-fullscreen');
-        if (!wrap || !button || !wrap.requestFullscreen) {
-            if (button) { button.hidden = true; }
-            return;
-        }
-        button.addEventListener('click', function() {
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            } else {
-                wrap.requestFullscreen().catch(function() {});
-            }
-        });
-        document.addEventListener('fullscreenchange', function() {
-            var app = document.getElementById('pdf-iframe').contentWindow.PDFViewerApplication;
-            if (app && app.pdfViewer) {
-                setTimeout(function() { app.pdfViewer.currentScaleValue = 'page-width'; }, 150);
-            }
-        });
-    })();
-
-    // 3. CORTINA DE FUMAÇA INTELIGENTE
-    var iframeElement = document.getElementById('pdf-iframe');
-
-    window.addEventListener('blur', function() {
-        if (document.activeElement === iframeElement) {
-            return;
-        }
-        if(iframeElement) iframeElement.style.opacity = '0'; 
-    });
-
-    window.addEventListener('focus', function() {
-        if(iframeElement) iframeElement.style.opacity = '1';
-    });
-
-    // 4. LOOP INVASOR NO IFRAME DO PDF.JS
-    function secureIframe() {
         var iframe = document.getElementById('pdf-iframe');
-        
-        var injectInterval = setInterval(function() {
+        var wrap = document.getElementById('pdfsecure-frame-wrap');
+        var stage = document.getElementById('pdfsecure-stage');
+        var toolbar = document.getElementById('pdfsecure-toolbar');
+        var button = document.getElementById('pdfsecure-fullscreen');
+        var active = false;
+        var savedScale = 'auto';
+        var savedPage = 1;
+
+        function app() {
+            try {
+                return iframe.contentWindow.PDFViewerApplication || null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function isFullscreen() {
+            return document.fullscreenElement === wrap || wrap.classList.contains('is-fullscreen');
+        }
+
+        function curtain(on) {
+            if (iframe) {
+                iframe.style.opacity = on ? '0' : '1';
+            }
+        }
+
+        function updateButton() {
+            var fullscreen = isFullscreen();
+            var label = fullscreen ? button.dataset.exitLabel : button.dataset.enterLabel;
+            button.setAttribute('aria-label', label);
+            button.setAttribute('aria-pressed', fullscreen ? 'true' : 'false');
+            button.title = label;
+            button.querySelector('[data-icon-enter]').hidden = fullscreen;
+            button.querySelector('[data-icon-exit]').hidden = !fullscreen;
+            button.querySelector('.pdfsecure-action-label').textContent = label;
+        }
+
+        function setNormalHeight() {
+            if (isFullscreen()) {
+                return;
+            }
+            wrap.style.height = Math.max(window.innerWidth < 576 ? 420 : 480,
+                window.innerHeight - wrap.getBoundingClientRect().top - 16) + 'px';
+        }
+
+        function syncFullscreen() {
+            var fullscreen = isFullscreen();
+            if (fullscreen === active) {
+                updateButton();
+                return;
+            }
+            active = fullscreen;
+            var application = app();
+            if (fullscreen) {
+                if (application && application.pdfViewer) {
+                    application.pdfViewer.currentPageNumber = savedPage;
+                    application.pdfViewer.currentScaleValue = 'page-width';
+                }
+                stage.focus();
+            } else {
+                if (application && application.pdfViewer) {
+                    savedPage = application.pdfViewer.currentPageNumber || savedPage;
+                    application.pdfViewer.currentPageNumber = savedPage;
+                    application.pdfViewer.currentScaleValue = savedScale || 'auto';
+                }
+                document.body.classList.remove('pdfsecure-fullscreen-active');
+                button.focus();
+                setNormalHeight();
+            }
+            updateButton();
+        }
+
+        function enterFallback() {
+            wrap.classList.add('is-fullscreen');
+            document.body.classList.add('pdfsecure-fullscreen-active');
+            syncFullscreen();
+        }
+
+        function exitFallback() {
+            wrap.classList.remove('is-fullscreen');
+            document.body.classList.remove('pdfsecure-fullscreen-active');
+            syncFullscreen();
+        }
+
+        function toggleFullscreen() {
+            var application = app();
+            if (isFullscreen()) {
+                if (document.fullscreenElement === wrap && document.exitFullscreen) {
+                    document.exitFullscreen().catch(function() {});
+                } else {
+                    exitFallback();
+                }
+                return;
+            }
+            if (application && application.pdfViewer) {
+                savedPage = application.pdfViewer.currentPageNumber || 1;
+                savedScale = application.pdfViewer.currentScaleValue || 'auto';
+            }
+            if (!document.fullscreenEnabled || !wrap.requestFullscreen) {
+                enterFallback();
+                return;
+            }
+            wrap.requestFullscreen().catch(enterFallback);
+        }
+
+        function keyName(event) {
+            return (event.key || String.fromCharCode(event.keyCode || 0)).toLowerCase();
+        }
+
+        function shield(doc, win) {
+            ['contextmenu', 'copy', 'cut', 'selectstart', 'dragstart'].forEach(function(type) {
+                doc.addEventListener(type, function(event) {
+                    event.preventDefault();
+                }, true);
+            });
+            win.addEventListener('keydown', function(event) {
+                var key = keyName(event);
+                var command = event.ctrlKey || event.metaKey;
+                if ((command && ['p', 's', 'o', 'c', 'x', 'a', 'u'].indexOf(key) !== -1)
+                        || key === 'f12' || event.keyCode === 123
+                        || (command && event.shiftKey && ['i', 'j', 'c', 's'].indexOf(key) !== -1)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            }, true);
+            doc.addEventListener('keyup', function(event) {
+                if (event.key === 'PrintScreen') {
+                    curtain(true);
+                    try {
+                        if (win.navigator.clipboard && win.navigator.clipboard.writeText) {
+                            win.navigator.clipboard.writeText('').catch(function() {});
+                        }
+                    } catch (error) {
+                        // Clipboard access depends on browser permissions.
+                    }
+                    window.setTimeout(function() {
+                        if (!document.hidden && document.hasFocus()) {
+                            curtain(false);
+                        }
+                    }, 1500);
+                }
+            }, true);
+            win.addEventListener('beforeprint', function() { curtain(true); });
+            win.addEventListener('afterprint', function() { curtain(false); });
+            doc.addEventListener('visibilitychange', function() {
+                curtain(doc.hidden || !doc.hasFocus());
+            });
+            win.addEventListener('blur', function() {
+                if (document.activeElement !== iframe) {
+                    curtain(true);
+                }
+            });
+            win.addEventListener('focus', function() { curtain(false); });
+        }
+
+        function hardenFrame() {
             try {
                 var innerWindow = iframe.contentWindow;
                 var innerDoc = iframe.contentDocument || innerWindow.document;
-                
-                if (innerDoc) {
-                    var style = innerDoc.createElement('style');
-                    style.innerHTML = `
-                        /* CORREÇÃO 2: Destruição dos botões de Tela Cheia (#presentationMode, #secondaryPresentationMode) */
-                        #print, #download, #secondaryPrint, #secondaryDownload, #openFile,
-                        #secondaryOpenFile, .print, .download, #presentationMode,
-                        #secondaryPresentationMode, .presentationMode,
-                        #editorModeButtons, #editorModeSeparator, #editorFreeText, #editorInk, #editorStamp,
-                        #editorHighlight, #cursorTextTool { display: none !important; }
-                        body, .textLayer {
-                            user-select: none !important;
-                            -webkit-user-select: none !important;
-                            cursor: default !important;
-                        }
-                        @media print { body { display: none !important; } }
-                    `;
-                    innerDoc.head.appendChild(style);
-
-                    innerDoc.addEventListener('keydown', function(e) {
-                        // CORREÇÃO 3: Bloqueio adicional da tecla F11
-                        if (e.key === 'F11' || (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'P' || e.key === 'S'))) {
-                            e.preventDefault();
-                        }
-                    });
-
-                    innerDoc.addEventListener('contextmenu', function(event) {
-                        event.preventDefault();
-                    });
-
-                    innerWindow.addEventListener('blur', function() {
-                        iframe.style.opacity = '0';
-                    });
-                    
-                    innerWindow.addEventListener('focus', function() {
-                        iframe.style.opacity = '1';
-                    });
-
-                    clearInterval(injectInterval);
+                if (!innerDoc || innerDoc.readyState !== 'complete') {
+                    return false;
                 }
-            } catch (e) {
-                // Silencia até que o Iframe termine de carregar
+                if (innerDoc.documentElement.dataset.pdfsecureHardened === 'true') {
+                    return true;
+                }
+                var style = innerDoc.createElement('style');
+                style.id = 'pdfsecure-hardening';
+                style.textContent = 'body, .textLayer { user-select:none !important; -webkit-user-select:none !important; cursor:default !important; }'
+                    + '@media print { html, body { display:none !important; visibility:hidden !important; } }';
+                innerDoc.head.appendChild(style);
+                innerDoc.documentElement.dataset.pdfsecureHardened = 'true';
+                shield(innerDoc, innerWindow);
+                innerDoc.addEventListener('keydown', function(event) {
+                    var key = keyName(event);
+                    if (key === 'f' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.repeat) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        toggleFullscreen();
+                    } else if (key === 'escape' && wrap.classList.contains('is-fullscreen')) {
+                        event.preventDefault();
+                        exitFallback();
+                    } else if (key === 'f11') {
+                        event.preventDefault();
+                    }
+                }, true);
+                return true;
+            } catch (error) {
+                return false;
             }
-        }, 500);
-    }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            var key = keyName(event);
+            if (key === 'f' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.repeat
+                    && !/^(INPUT|TEXTAREA|SELECT)$/.test(event.target && event.target.tagName || '')) {
+                event.preventDefault();
+                toggleFullscreen();
+            } else if (key === 'escape' && wrap.classList.contains('is-fullscreen')) {
+                event.preventDefault();
+                exitFallback();
+            }
+        }, true);
+        button.addEventListener('click', toggleFullscreen);
+        toolbar.addEventListener('pointerdown', function() { curtain(false); });
+        toolbar.addEventListener('click', function() { curtain(false); });
+        document.addEventListener('fullscreenchange', syncFullscreen);
+        window.addEventListener('resize', setNormalHeight);
+        window.addEventListener('load', setNormalHeight);
+        iframe.addEventListener('load', function() {
+            setNormalHeight();
+            if (!hardenFrame()) {
+                var interval = window.setInterval(function() {
+                    if (hardenFrame()) {
+                        window.clearInterval(interval);
+                    }
+                }, 250);
+                window.setTimeout(function() { window.clearInterval(interval); }, 30000);
+            }
+        });
+        shield(document, window);
+        setNormalHeight();
+        updateButton();
+        if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete' && !hardenFrame()) {
+            var fallbackInterval = window.setInterval(function() {
+                if (hardenFrame()) {
+                    window.clearInterval(fallbackInterval);
+                }
+            }, 250);
+            window.setTimeout(function() { window.clearInterval(fallbackInterval); }, 30000);
+        }
+    })();
     </script>
     <?php
 
