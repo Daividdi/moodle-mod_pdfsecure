@@ -1,5 +1,12 @@
 # PDF Secure (mod_pdfsecure)
 
+**Internal integration API (v2.5.0):** `\mod_pdfsecure\local\protection_api`
+is used by `mod_slidesecure` to normalize and watermark a converted PDF, stream it
+through a component-owned protected endpoint, and merge per-page progress into its
+own table. The calling component remains responsible for login, context and
+capability checks and for resolving files from a strict allow-list; it must never
+expose its source or `normalized` file area through pluginfile.
+
 A Moodle activity module that serves course PDFs through an authenticated route the
 uploaded file itself never has, with a **per-user watermark burned into the file**.
 
