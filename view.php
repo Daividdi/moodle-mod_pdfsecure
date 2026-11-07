@@ -74,7 +74,9 @@ if ($selectedfile) {
     // The stamped bytes contain the current minute, so the PDF URL must be unique
     // for each page view. Otherwise PDF.js or an intermediary can reuse the previous
     // response even though the pluginfile callback disables shared caching.
-    $fileurl->param('pdfsecureview', time() . '-' . bin2hex(random_bytes(4)));
+    // One-use viewer token (also unique per view, so nothing reuses a previous response).
+    $fileurl->param('pdfsecureview', \mod_pdfsecure\local\view_token::issue((int)$cm->id, 'mod_pdfsecure',
+        $selectedfile->get_filename(), pdfsecure_stamp_mode() === 'off' ? 50 : 1));
     $viewerpath = $CFG->wwwroot . '/mod/pdfsecure/pdfjs-drm/web/viewer.html';
     
     // Forçando o idioma para Inglês

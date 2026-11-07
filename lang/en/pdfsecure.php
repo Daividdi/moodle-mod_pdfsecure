@@ -110,3 +110,4 @@ $string['errorzipentry'] = 'The ZIP must contain only top-level PDF files; folde
 $string['errorzipencrypted'] = 'Encrypted ZIP entries are not accepted.';
 $string['errorzipsize'] = 'This ZIP exceeds the limit of 50 entries or 500 MB uncompressed.';
 $string['errorzipnovalidpdfs'] = 'The ZIP contains no PDF that can be added to PDF Secure.';
+$string['cachedef_viewtokens'] = 'Short-lived PDF viewer tokens';
