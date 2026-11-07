@@ -199,8 +199,12 @@ if ($selectedfile) {
             if (isFullscreen()) {
                 return;
             }
-            wrap.style.height = Math.max(window.innerWidth < 576 ? 420 : 480,
-                window.innerHeight - wrap.getBoundingClientRect().top - 16) + 'px';
+            // Full screen height minus the sticky site header, so a page is never squashed; the reader scrolls
+            // the page once and the whole viewer is in view.
+            var nav = document.querySelector('#topBar, nav.navbar.fixed-top, .navbar.fixed-top, nav.navbar');
+            var header = nav ? Math.max(0, nav.getBoundingClientRect().bottom) : 0;
+            wrap.style.scrollMarginTop = (header + 8) + 'px';
+            wrap.style.height = Math.max(window.innerWidth < 576 ? 420 : 560, window.innerHeight - header - 24) + 'px';
         }
 
         function syncFullscreen() {
