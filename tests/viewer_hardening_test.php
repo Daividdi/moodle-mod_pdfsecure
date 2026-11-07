@@ -37,7 +37,7 @@ final class viewer_hardening_test extends \basic_testcase {
 
         $this->assertMatchesRegularExpression('/isEvalSupported: \{\s+value: false,/', $viewer);
         $this->assertMatchesRegularExpression('/defaultUrl = \{\s+value: "",/', $viewer);
-        $this->assertStringContainsString('mod_pdfsecure\\/stamped', $viewer);
+        $this->assertStringContainsString('mod_(?:pdfsecure|slidesecure)\\/stamped\\/0', $viewer);
         $this->assertMatchesRegularExpression('/!isPdfSecureDocument\(new URL\(file,/', $viewer);
     }
 
