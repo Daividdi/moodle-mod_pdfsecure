@@ -98,8 +98,9 @@
     }
 }
 
+/* Block printing only on this activity's own pages: plugin CSS loads site-wide. */
 @media print {
-    html, body, #page, #page-wrapper {
+    body.path-mod-pdfsecure, body.path-mod-pdfsecure #page, body.path-mod-pdfsecure #page-wrapper {
         display: none !important;
         visibility: hidden !important;
     }
